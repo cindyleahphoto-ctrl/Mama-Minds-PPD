@@ -1,0 +1,16 @@
+{
+  "name": "mama-minds",
+  "version": "1.0.0",
+  "description": "Postnatal mental health support app for African mothers — based on Edinburgh EPDS scale",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  },
+  "keywords": ["ppd", "postpartum", "mental-health", "africa", "epds"],
+  "license": "MIT"
+}
