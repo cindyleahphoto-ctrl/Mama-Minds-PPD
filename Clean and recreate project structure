@@ -1,0 +1,2 @@
+
+rm -rf /home/claude/mama-minds && mkdir -p /home/claude/mama-minds/{public,src/components,src/data,src/styles}
