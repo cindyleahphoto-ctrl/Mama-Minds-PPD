@@ -1,0 +1,15 @@
+{
+  "name": "Mama Minds",
+  "short_name": "Mama Minds",
+  "description": "Postnatal mental health support for African mothers",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#8B4513",
+  "theme_color": "#8B4513",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "categories": ["health", "medical", "lifestyle"]
+}
