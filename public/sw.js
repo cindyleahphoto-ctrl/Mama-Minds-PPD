@@ -1,17 +1,12 @@
 /* Mama Minds — Service Worker for offline support */
-const CACHE_NAME = 'mama-minds-v1';
+const CACHE_NAME = 'mama-minds-v2';
 const ASSETS = [
   './',
   './index.html',
-  './dashboard.html',
-  './src/styles/main.css',
-  './src/styles/dashboard.css',
-  './src/main.js',
-  './src/dashboard.js',
-  './src/data/languages.js',
-  './src/data/questions.js',
-  './src/data/resources.js',
-  'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap'
+  './manifest.json',
+  './icon.svg',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
 ];
 
 self.addEventListener('install', event => {

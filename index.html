@@ -1,16 +1,16 @@
-cat > index.html << 'EOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mama Minds - Mental Health Support</title>
-  <link rel="manifest" href="./Manifest.json">
-  <link rel="stylesheet" href="./Main CSS">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./src/styles/main.css">
 </head>
 <body>
   <div id="root"></div>
-  <script src="./Main patient App.js"></script>
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>
-EOF
