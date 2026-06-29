@@ -64,12 +64,14 @@ function renderApp() {
   root.innerHTML = buildAppHTML();
   attachEventListeners();
 
-  // Show language selector if first visit, else home
+  const hasOnboarded = localStorage.getItem('mamaminds-onboarded');
   const hasVisited = localStorage.getItem('mamaminds-visited');
-  if (hasVisited) {
+  if (hasOnboarded && hasVisited) {
     showScreen('screen-home');
-  } else {
+  } else if (hasOnboarded) {
     showScreen('screen-lang');
+  } else {
+    showScreen('screen-welcome');
   }
 }
 
@@ -77,6 +79,7 @@ function renderApp() {
 function buildAppHTML() {
   return `
 <div id="app">
+  ${buildWelcomeScreen()}
   ${buildLangScreen()}
   ${buildHomeScreen()}
   ${buildAssessScreen()}
@@ -86,6 +89,24 @@ function buildAppHTML() {
   ${buildProfileScreen()}
 </div>`;
 }
+
+function buildWelcomeScreen() {
+  return `
+<div class="screen" id="screen-welcome">
+  <div class="welcome-content">
+    <img class="welcome-cover" src="./images/cover-illustration.png"
+         alt="Mama Minds — Postpartum Wellness App" width="500" height="500">
+    <button class="action-btn welcome-btn" onclick="continueFromWelcome()">
+      Get started
+    </button>
+  </div>
+</div>`;
+}
+
+window.continueFromWelcome = function() {
+  localStorage.setItem('mamaminds-onboarded', '1');
+  showScreen('screen-lang');
+};
 
 function buildLangScreen() {
   const langBtns = Object.entries(LANGUAGES).map(([code, l]) => `

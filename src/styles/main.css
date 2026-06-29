@@ -79,6 +79,41 @@ html, body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ── WELCOME SCREEN ── */
+#screen-welcome {
+  background: var(--terra-pale);
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 0;
+}
+
+.welcome-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 40px 24px;
+}
+
+.welcome-cover {
+  width: min(88vw, 420px);
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  border-radius: 16px;
+  margin-bottom: 32px;
+}
+
+.welcome-btn {
+  width: 100%;
+  max-width: 320px;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
 /* ── LANGUAGE SELECTOR ── */
 #screen-lang {
   background: var(--terra);

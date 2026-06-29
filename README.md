@@ -32,7 +32,7 @@ Found a bug or have a suggestion? [Open an issue](https://github.com/cindyleahph
 
 ## License
 
-MIT — see [LICENSE](https://github.com/cindyleahphoto-ctrl/Mama-Minds-PPD/blob/main/LICENSE).
+Please contact the project owner before reusing or redistributing this code.
 
 ---
 
