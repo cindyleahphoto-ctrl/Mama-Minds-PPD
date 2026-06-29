@@ -87,7 +87,7 @@ Found a bug or have a suggestion? [Open an issue](https://github.com/cindyleahph
 
 ## License
 
-This project is licensed under the **MIT License** see the [LICENSE](LICENSE) file for details.
+Licensing terms are being finalized. Please contact the project owner before reusing or redistributing this code.
 
 ---
 
