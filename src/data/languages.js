@@ -6,7 +6,9 @@
 export const LANGUAGES = {
   en: {
     name: 'English', chip: 'EN', native: 'English',
-    greeting: 'Good morning,', offline: 'Offline ready',
+    greeting: 'Good morning,',
+    greetings: { morning: 'Good morning,', afternoon: 'Good afternoon,', evening: 'Good evening,' },
+    offline: 'Offline ready',
     checkin_label: 'Days since last check-in', checkin_hint: 'Take today\'s mood check',
     alert_title: 'Alert your support network', alert_sub: 'Reach a healthcare worker or loved one',
     mood_label: 'How are you feeling today?',
@@ -16,7 +18,7 @@ export const LANGUAGES = {
     card_help: 'Get help now', card_help_sub: 'Alert support',
     card_profile: 'My profile', card_profile_sub: 'Settings & plan',
     moods: ['Low', 'Okay', 'Good', 'Joyful'],
-    nav: ['Home', 'Check-in', 'Resources', 'Alert'],
+    nav: ['Home', 'Check-in', 'Resources', 'Community', 'Alert'],
     assess_title: 'EPDS Assessment', assess_sub: 'Edinburgh Postnatal Depression Scale',
     q_of: 'Question {n} of 10', btn_next: 'Next', btn_results: 'See my results', btn_back: 'Back',
     result_label: 'Your EPDS score', result_means: 'What this means', result_steps: 'Recommended next steps',
@@ -42,7 +44,14 @@ export const LANGUAGES = {
     last_assess_label: 'Last assessment', delete_data: 'Delete my data',
     upgrade_title: 'Mama Minds Plus',
     upgrade_desc: 'Unlimited assessments, tele-health session booking, private therapist chat, full care plan export, and priority emergency alerts. R89/month or R799/year.',
-    upgrade_btn: 'Upgrade to Plus'
+    upgrade_btn: 'Upgrade to Plus',
+    epds_disclaimer: 'This screening tool is not a diagnosis. If your score suggests you may be experiencing postpartum depression, please speak to your healthcare provider — you deserve support.',
+    welcome_tagline: 'The world moved on after you gave birth. This is a place to check in — quietly, privately, honestly.',
+    community_title: 'Community',
+    community_sub: 'Stories from other mothers',
+    community_invite: 'Read what other mothers are going through. Sign in to share your own story.',
+    community_sign_in_prompt: 'Sign in to join the conversation',
+    community_post_placeholder: 'Share your story...'
   },
 
   zu: {
@@ -57,7 +66,7 @@ export const LANGUAGES = {
     card_help: 'Thola usizo manje', card_help_sub: 'Xwayisa ukusekela',
     card_profile: 'Iphrofayili yami', card_profile_sub: 'Izilungiselelo & iplanhi',
     moods: ['Phansi', 'Kulungile', 'Kuhle', 'Ujabule'],
-    nav: ['Ikhaya', 'Hlola', 'Izinsiza', 'Xwayisa'],
+    nav: ['Ikhaya', 'Hlola', 'Izinsiza', 'Umphakathi', 'Xwayisa'],
     assess_title: 'Ukuhlolwa kwe-EPDS', assess_sub: 'Isilinganiso se-Edinburgh Sokukhathazeka Ngemuva Kokubeletha',
     q_of: 'Umbuzo {n} we-10', btn_next: 'Okulandelayo', btn_results: 'Bona imiphumela yami', btn_back: 'Emuva',
     result_label: 'Amapointi akho e-EPDS', result_means: 'Lokhu kusho ukuthini', result_steps: 'Izinyathelo ezilandelayo ezihlongoswayo',
@@ -83,7 +92,14 @@ export const LANGUAGES = {
     last_assess_label: 'Ukuhlolwa okokugcina', delete_data: 'Susa idatha yami',
     upgrade_title: 'Mama Minds Plus',
     upgrade_desc: 'Ukuhlolwa okungakhawuliwe, ukubhukha ithele-mpilo, ingxoxo yomhleli wezengqondo oyimfihlo, nokukhushulwa kohlelo lokukhathalela. R89/inyanga noma R799/unyaka.',
-    upgrade_btn: 'Khushulelana ku-Plus'
+    upgrade_btn: 'Khushulelana ku-Plus',
+    epds_disclaimer: 'This screening tool is not a diagnosis. If your score suggests you may be experiencing postpartum depression, please speak to your healthcare provider — you deserve support.',
+    welcome_tagline: 'The world moved on after you gave birth. This is a place to check in — quietly, privately, honestly.',
+    community_title: 'Umphakathi',
+    community_sub: 'Stories from other mothers',
+    community_invite: 'Read what other mothers are going through. Sign in to share your own story.',
+    community_sign_in_prompt: 'Sign in to join the conversation',
+    community_post_placeholder: 'Share your story...'
   },
 
   xh: {
@@ -98,7 +114,7 @@ export const LANGUAGES = {
     card_help: 'Fumana uncedo ngoku', card_help_sub: 'Xela inkxaso',
     card_profile: 'Iprofayile yam', card_profile_sub: 'Iisetingi & isicwangciso',
     moods: ['Phantsi', 'Kulungile', 'Kulungile', 'Wonelisekile'],
-    nav: ['Ikhaya', 'Jonga', 'Izixhobo', 'Xela'],
+    nav: ['Ikhaya', 'Jonga', 'Izixhobo', 'Uluntu', 'Xela'],
     assess_title: 'Uvavanyo lwe-EPDS', assess_sub: 'Isilinganiso se-Edinburgh sokukhathazeka emva kwe-postpartum',
     q_of: 'Umbuzo {n} we-10', btn_next: 'Okulandelayo', btn_results: 'Jonga iziphumo zam', btn_back: 'Emva',
     result_label: 'Isikolo sakho se-EPDS', result_means: 'Oku kuthetha ntoni', result_steps: 'Amanyathelo alandelayo acetywayo',
@@ -124,7 +140,14 @@ export const LANGUAGES = {
     last_assess_label: 'Uvavanyo lwamva nje', delete_data: 'Cima idatha yam',
     upgrade_title: 'Mama Minds Plus',
     upgrade_desc: 'Uvavanyo olungaphelelanga, ukubhukha i-tele-health, ingxoxo yomhleli wengqondo oyimfihlo. R89/inyanga okanye R799/unyaka.',
-    upgrade_btn: 'Nyuka uye kwi-Plus'
+    upgrade_btn: 'Nyuka uye kwi-Plus',
+    epds_disclaimer: 'This screening tool is not a diagnosis. If your score suggests you may be experiencing postpartum depression, please speak to your healthcare provider — you deserve support.',
+    welcome_tagline: 'The world moved on after you gave birth. This is a place to check in — quietly, privately, honestly.',
+    community_title: 'Uluntu',
+    community_sub: 'Stories from other mothers',
+    community_invite: 'Read what other mothers are going through. Sign in to share your own story.',
+    community_sign_in_prompt: 'Sign in to join the conversation',
+    community_post_placeholder: 'Share your story...'
   },
 
   af: {
@@ -139,7 +162,7 @@ export const LANGUAGES = {
     card_help: 'Kry nou hulp', card_help_sub: 'Waarsku ondersteuning',
     card_profile: 'My profiel', card_profile_sub: 'Instellings en plan',
     moods: ['Neerslagtig', 'Okay', 'Goed', 'Bly'],
-    nav: ['Tuis', 'Inskrywing', 'Hulpbronne', 'Waarsku'],
+    nav: ['Tuis', 'Inskrywing', 'Hulpbronne', 'Gemeenskap', 'Waarsku'],
     assess_title: 'EPDS-assessering', assess_sub: 'Edinburgh Postnatale Depressie-skaal',
     q_of: 'Vraag {n} van 10', btn_next: 'Volgende', btn_results: 'Sien my resultate', btn_back: 'Terug',
     result_label: 'Jou EPDS-telling', result_means: 'Wat dit beteken', result_steps: 'Aanbevole volgende stappe',
@@ -165,7 +188,14 @@ export const LANGUAGES = {
     last_assess_label: 'Laaste assessering', delete_data: 'Vee my data uit',
     upgrade_title: 'Mama Minds Plus',
     upgrade_desc: 'Onbeperkte assesserings, tele-gesondheid besprekings, privaat terapeut-geselsie. R89/maand of R799/jaar.',
-    upgrade_btn: 'Opgradeer na Plus'
+    upgrade_btn: 'Opgradeer na Plus',
+    epds_disclaimer: 'Hierdie siftingsinstrument is nie \'n diagnose nie. As jou telling aandui dat jy moontlik postnatale depressie ervaar, praat asseblief met jou gesondheidsorgverskaffer — jy verdien ondersteuning.',
+    welcome_tagline: 'Die wêreld het aanbeweeg nadat jy geboorte gegee het. Hier is \'n plek om eerlik met jouself in te skakel.',
+    community_title: 'Gemeenskap',
+    community_sub: 'Stories from other mothers',
+    community_invite: 'Read what other mothers are going through. Sign in to share your own story.',
+    community_sign_in_prompt: 'Sign in to join the conversation',
+    community_post_placeholder: 'Share your story...'
   },
 
   st: {
@@ -180,7 +210,7 @@ export const LANGUAGES = {
     card_help: 'Fumana thuso joale', card_help_sub: 'Tsebisa tšehetso',
     card_profile: 'Profaele ea ka', card_profile_sub: 'Litlhophiso & moralo',
     moods: ['Fatše', 'Ho lokile', 'Hantle', 'Thabile'],
-    nav: ['Lapeng', 'Beha leihlo', 'Mehloli', 'Tsebisa'],
+    nav: ['Lapeng', 'Beha leihlo', 'Mehloli', 'Sechaba', 'Tsebisa'],
     assess_title: 'Tekolo ea EPDS', assess_sub: 'Tekanyo ea Edinburgh ea Ho Hiloa ka mor\'a Tsoalo',
     q_of: 'Potso {n} ea 10', btn_next: 'E latelang', btn_results: 'Bona liphetho tsa ka', btn_back: 'Morao',
     result_label: 'Manane a hao a EPDS', result_means: 'Se sena se bolela eng', result_steps: 'Mehato e hlokometsoeng e latelang',
@@ -206,7 +236,14 @@ export const LANGUAGES = {
     last_assess_label: 'Tekolo ea ho qetela', delete_data: 'Hlakola data ea ka',
     upgrade_title: 'Mama Minds Plus',
     upgrade_desc: 'Tekolo e sa lekaneng, ho bukhisa sesene sa tele-bophelo, ingxoxo ya mohlophisi wa ingqondo. R89/kgwedi kapa R799/selemo.',
-    upgrade_btn: 'Eketsa ho Plus'
+    upgrade_btn: 'Eketsa ho Plus',
+    epds_disclaimer: 'This screening tool is not a diagnosis. If your score suggests you may be experiencing postpartum depression, please speak to your healthcare provider — you deserve support.',
+    welcome_tagline: 'The world moved on after you gave birth. This is a place to check in — quietly, privately, honestly.',
+    community_title: 'Sechaba',
+    community_sub: 'Stories from other mothers',
+    community_invite: 'Read what other mothers are going through. Sign in to share your own story.',
+    community_sign_in_prompt: 'Sign in to join the conversation',
+    community_post_placeholder: 'Share your story...'
   },
 
   tn: {
@@ -221,7 +258,7 @@ export const LANGUAGES = {
     card_help: 'Bona thuso jaanong', card_help_sub: 'Itsise thuso',
     card_profile: 'Profaele ya me', card_profile_sub: 'Dipeelo & moralo',
     moods: ['Tlase', 'Go siame', 'Botoka', 'Thabile'],
-    nav: ['Gae', 'Leba', 'Didirisiwa', 'Itsise'],
+    nav: ['Gae', 'Leba', 'Didirisiwa', 'Setšhaba', 'Itsise'],
     assess_title: 'Tekolo ya EPDS', assess_sub: 'Tekanyetso ya Edinburgh ya Phôlô ya Morago ga Pelego',
     q_of: 'Potso {n} ya 10', btn_next: 'E e latelang', btn_results: 'Bona dipholo tsa me', btn_back: 'Morago',
     result_label: 'Palo ya gago ya EPDS', result_means: 'Se se kaya eng', result_steps: 'Magato a a akantsweng a a latelang',
@@ -247,7 +284,14 @@ export const LANGUAGES = {
     last_assess_label: 'Tekolo ya bofelo', delete_data: 'Phimola data ya me',
     upgrade_title: 'Mama Minds Plus',
     upgrade_desc: 'Tekolo e e sa lekaneng, go bukhisa sesene sa tele-bophelo, ingxoxo ya mohlophisi wa kelelo. R89/kgwedi kgotsa R799/ngwaga.',
-    upgrade_btn: 'Tokafatsa go Plus'
+    upgrade_btn: 'Tokafatsa go Plus',
+    epds_disclaimer: 'This screening tool is not a diagnosis. If your score suggests you may be experiencing postpartum depression, please speak to your healthcare provider — you deserve support.',
+    welcome_tagline: 'The world moved on after you gave birth. This is a place to check in — quietly, privately, honestly.',
+    community_title: 'Setšhaba',
+    community_sub: 'Stories from other mothers',
+    community_invite: 'Read what other mothers are going through. Sign in to share your own story.',
+    community_sign_in_prompt: 'Sign in to join the conversation',
+    community_post_placeholder: 'Share your story...'
   },
 
   nso: {
@@ -262,7 +306,7 @@ export const LANGUAGES = {
     card_help: 'Hwetša thušo bjale', card_help_sub: 'Tsebišša thušo',
     card_profile: 'Profaele ya ka', card_profile_sub: 'Dipeelo & moralo',
     moods: ['Fase', 'Go lokile', 'Botse', 'Thabile'],
-    nav: ['Gae', 'Lebelela', 'Didirišwa', 'Tsebišša'],
+    nav: ['Gae', 'Lebelela', 'Didirišwa', 'Setšhaba', 'Tsebišša'],
     assess_title: 'Tlhatlhobo ya EPDS', assess_sub: 'Tekanyo ya Edinburgh ya Pholo ya Morago ga Tswalo',
     q_of: 'Potšo {n} ya 10', btn_next: 'E latelago', btn_results: 'Bona diphetho tša ka', btn_back: 'Morago',
     result_label: 'Palo ya gago ya EPDS', result_means: 'Se se ra eng', result_steps: 'Magato a a šišintšwego a a latelago',
@@ -288,7 +332,14 @@ export const LANGUAGES = {
     last_assess_label: 'Tlhatlhobo ya mafelelo', delete_data: 'Phimola data ya ka',
     upgrade_title: 'Mama Minds Plus',
     upgrade_desc: 'Tlhatlhobo ye sa lekaneng, go bukhisa sesene sa tele-bophelo, ingxoxo ya mohlophisi wa kelelo. R89/kgwedi kgotsa R799/ngwaga.',
-    upgrade_btn: 'Eketša go Plus'
+    upgrade_btn: 'Eketša go Plus',
+    epds_disclaimer: 'This screening tool is not a diagnosis. If your score suggests you may be experiencing postpartum depression, please speak to your healthcare provider — you deserve support.',
+    welcome_tagline: 'The world moved on after you gave birth. This is a place to check in — quietly, privately, honestly.',
+    community_title: 'Setšhaba',
+    community_sub: 'Stories from other mothers',
+    community_invite: 'Read what other mothers are going through. Sign in to share your own story.',
+    community_sign_in_prompt: 'Sign in to join the conversation',
+    community_post_placeholder: 'Share your story...'
   },
 
   ts: {
@@ -303,7 +354,7 @@ export const LANGUAGES = {
     card_help: 'Kuma pfuneto sweswi', card_help_sub: 'Xivisa pfuneto',
     card_profile: 'Profayili ya mina', card_profile_sub: 'Swirho & mupfumelelo',
     moods: ['Ehansi', 'Ku lulamile', 'Kahle', 'Tsakile'],
-    nav: ['Kaya', 'Languta', 'Switirho', 'Xivisa'],
+    nav: ['Kaya', 'Languta', 'Switirho', 'Community', 'Xivisa'],
     assess_title: 'Hlelo ra EPDS', assess_sub: 'Ntlawa wa Edinburgh wa Ku Karhala ka ku Velekela',
     q_of: 'Swivutiso {n} swa 10', btn_next: 'Lexi landzelaka', btn_results: 'Vona swipfumelo swa mina', btn_back: 'Endzhaku',
     result_label: 'Ntlawa wa wena wa EPDS', result_means: 'Leswi swi vula yini', result_steps: 'Magoza lama ringanyetiweke lama landzelaka',
@@ -329,7 +380,14 @@ export const LANGUAGES = {
     last_assess_label: 'Hlelo ra makumu', delete_data: 'Susa data ya mina',
     upgrade_title: 'Mama Minds Plus',
     upgrade_desc: 'Hlelo leri nga heriki, ku bukhisa sesene ra tele-miri. R89/tin\'weti kumbe R799/lembe.',
-    upgrade_btn: 'Engetela eka Plus'
+    upgrade_btn: 'Engetela eka Plus',
+    epds_disclaimer: 'This screening tool is not a diagnosis. If your score suggests you may be experiencing postpartum depression, please speak to your healthcare provider — you deserve support.',
+    welcome_tagline: 'The world moved on after you gave birth. This is a place to check in — quietly, privately, honestly.',
+    community_title: 'Community',
+    community_sub: 'Stories from other mothers',
+    community_invite: 'Read what other mothers are going through. Sign in to share your own story.',
+    community_sign_in_prompt: 'Sign in to join the conversation',
+    community_post_placeholder: 'Share your story...'
   },
 
   ve: {
@@ -344,7 +402,7 @@ export const LANGUAGES = {
     card_help: 'Wana thuso zwino', card_help_sub: 'Taledza u thusa',
     card_profile: 'Profhaele yanga', card_profile_sub: 'Zwilaedza & ṱhogomelo',
     moods: ['Fhasi', 'Zwi luga', 'Zwavhudi', 'A tshega'],
-    nav: ['Hayani', 'Sedzela', 'Zwithu', 'Taledza'],
+    nav: ['Hayani', 'Sedzela', 'Zwithu', 'Community', 'Taledza'],
     assess_title: 'Ṱoḓuluso ya EPDS', assess_sub: 'Tekanyo ya Edinburgh ya u Hluwa nga murahu ha u Bebelesa',
     q_of: 'Mbudziso {n} ya 10', btn_next: 'Ine ya tevhela', btn_results: 'Vhona mvelelo dzanga', btn_back: 'Murahu',
     result_label: 'Pointe yau ya EPDS', result_means: 'Zwine zwa amba mini', result_steps: 'Nḓila dzo humbulwaho dza u tevhela',
@@ -370,7 +428,14 @@ export const LANGUAGES = {
     last_assess_label: 'Ṱoḓuluso ya u fhedzela', delete_data: 'Dzima data yanga',
     upgrade_title: 'Mama Minds Plus',
     upgrade_desc: 'Ṱoḓuluso yo nṱhesa, u bukhisa sesene ya tele-mapfurelo. R89/phando kana R799/ṅwaha.',
-    upgrade_btn: 'Engedza kha Plus'
+    upgrade_btn: 'Engedza kha Plus',
+    epds_disclaimer: 'This screening tool is not a diagnosis. If your score suggests you may be experiencing postpartum depression, please speak to your healthcare provider — you deserve support.',
+    welcome_tagline: 'The world moved on after you gave birth. This is a place to check in — quietly, privately, honestly.',
+    community_title: 'Community',
+    community_sub: 'Stories from other mothers',
+    community_invite: 'Read what other mothers are going through. Sign in to share your own story.',
+    community_sign_in_prompt: 'Sign in to join the conversation',
+    community_post_placeholder: 'Share your story...'
   },
 
   ss: {
@@ -385,7 +450,7 @@ export const LANGUAGES = {
     card_help: 'Tsatsa lusito manje', card_help_sub: 'Tsebisa lusito',
     card_profile: 'Iphrofayili yami', card_profile_sub: 'Tilungiselelo nesicelo',
     moods: ['Phansi', 'Kulungile', 'Kahle', 'Ujabule'],
-    nav: ['Ekhaya', 'Hlola', 'Ticonco', 'Tsebisa'],
+    nav: ['Ekhaya', 'Hlola', 'Ticonco', 'Umphakati', 'Tsebisa'],
     assess_title: 'Uhlolisiselo lwe-EPDS', assess_sub: 'Silinganiso se-Edinburgh sekudzabuka ngemuva kwekubelethwa',
     q_of: 'Umbuzo {n} we-10', btn_next: 'Lokulandelako', btn_results: 'Bona imiphumela yami', btn_back: 'Emuva',
     result_label: 'Amapointe akho e-EPDS', result_means: 'Lokhu kusho yini', result_steps: 'Tigaba letinconyiwe letilandelako',
@@ -411,7 +476,14 @@ export const LANGUAGES = {
     last_assess_label: 'Uhlolisiselo lwekugcina', delete_data: 'Susa idatha yami',
     upgrade_title: 'Mama Minds Plus',
     upgrade_desc: 'Uhlolisiselo olungakhawuliwe, ukubhukha ithele-mpilo, ingxoxo yomhleli wengqondo. R89/inyanga noma R799/unyaka.',
-    upgrade_btn: 'Khushulelana ku-Plus'
+    upgrade_btn: 'Khushulelana ku-Plus',
+    epds_disclaimer: 'This screening tool is not a diagnosis. If your score suggests you may be experiencing postpartum depression, please speak to your healthcare provider — you deserve support.',
+    welcome_tagline: 'The world moved on after you gave birth. This is a place to check in — quietly, privately, honestly.',
+    community_title: 'Umphakati',
+    community_sub: 'Stories from other mothers',
+    community_invite: 'Read what other mothers are going through. Sign in to share your own story.',
+    community_sign_in_prompt: 'Sign in to join the conversation',
+    community_post_placeholder: 'Share your story...'
   },
 
   nr: {
@@ -426,7 +498,7 @@ export const LANGUAGES = {
     card_help: 'Thola usizo manje', card_help_sub: 'Xwayisa ukusekela',
     card_profile: 'Iprofayele yami', card_profile_sub: 'Izitatimende nehlelo',
     moods: ['Phansi', 'Kulungile', 'Kahle', 'Ujabule'],
-    nav: ['Ikhaya', 'Bheka', 'Izinsiza', 'Xwayisa'],
+    nav: ['Ikhaya', 'Bheka', 'Izinsiza', 'Umphakathi', 'Xwayisa'],
     assess_title: 'Uhlolisiselo lwe-EPDS', assess_sub: 'Isilinganiso se-Edinburgh Sokudabuka Ngemuva Kokuzala',
     q_of: 'Umbuzo {n} we-10', btn_next: 'Okulandelayo', btn_results: 'Bona imiphumela yami', btn_back: 'Emuva',
     result_label: 'Amazinga wakho we-EPDS', result_means: 'Lokhu kusho ukuthini', result_steps: 'Izinyathelo ezinconyiwe ezilandelayo',
@@ -452,7 +524,14 @@ export const LANGUAGES = {
     last_assess_label: 'Ukuhlolwa okokugcina', delete_data: 'Susa idatha yami',
     upgrade_title: 'Mama Minds Plus',
     upgrade_desc: 'Ukuhlolwa okungakhawuliwe, ukubhukha ithele-mpilo, ingxoxo yomhleli wezengqondo. R89/inyanga noma R799/unyaka.',
-    upgrade_btn: 'Khushulelana ku-Plus'
+    upgrade_btn: 'Khushulelana ku-Plus',
+    epds_disclaimer: 'This screening tool is not a diagnosis. If your score suggests you may be experiencing postpartum depression, please speak to your healthcare provider — you deserve support.',
+    welcome_tagline: 'The world moved on after you gave birth. This is a place to check in — quietly, privately, honestly.',
+    community_title: 'Umphakathi',
+    community_sub: 'Stories from other mothers',
+    community_invite: 'Read what other mothers are going through. Sign in to share your own story.',
+    community_sign_in_prompt: 'Sign in to join the conversation',
+    community_post_placeholder: 'Share your story...'
   }
 };
 
