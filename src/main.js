@@ -15,6 +15,7 @@ let state = {
   lastScore: null,
   moodHistory: [],
   userName: 'Amara',
+  postpartumRange: null, // '0-6w' | '6w-6m' | '6m-12m' | '1y+' | null (skipped)
 };
 
 // ── Init ───────────────────────────────────
@@ -44,6 +45,7 @@ function saveState() {
       lastScore: state.lastScore,
       moodHistory: state.moodHistory,
       userName: state.userName,
+      postpartumRange: state.postpartumRange,
     };
     localStorage.setItem('mamaminds-state', JSON.stringify(toSave));
   } catch (e) {
@@ -64,10 +66,14 @@ function renderApp() {
   root.innerHTML = buildAppHTML();
   attachEventListeners();
 
-  const hasOnboarded = localStorage.getItem('mamaminds-onboarded');
-  const hasVisited = localStorage.getItem('mamaminds-visited');
-  if (hasOnboarded && hasVisited) {
+  const hasOnboarded    = localStorage.getItem('mamaminds-onboarded');
+  const hasVisited      = localStorage.getItem('mamaminds-visited');
+  const hasProfileDone  = localStorage.getItem('mamaminds-profile-done');
+
+  if (hasOnboarded && hasVisited && hasProfileDone) {
     showScreen('screen-home');
+  } else if (hasOnboarded && hasVisited) {
+    showScreen('screen-name');
   } else if (hasOnboarded) {
     showScreen('screen-lang');
   } else {
@@ -81,10 +87,13 @@ function buildAppHTML() {
 <div id="app">
   ${buildWelcomeScreen()}
   ${buildLangScreen()}
+  ${buildNameScreen()}
+  ${buildStageScreen()}
   ${buildHomeScreen()}
   ${buildAssessScreen()}
   ${buildResultScreen()}
   ${buildResourcesScreen()}
+  ${buildCommunityScreen()}
   ${buildAlertScreen()}
   ${buildProfileScreen()}
 </div>`;
@@ -96,6 +105,7 @@ function buildWelcomeScreen() {
   <div class="welcome-content">
     <img class="welcome-cover" src="./images/cover-illustration.png"
          alt="Mama Minds — Postpartum Wellness App" width="500" height="500">
+    <p class="welcome-tagline">${state.L.welcome_tagline || 'The world moved on after you gave birth. This is a place to check in — quietly, privately, honestly.'}</p>
     <button class="action-btn welcome-btn" onclick="continueFromWelcome()">
       Get started
     </button>
@@ -106,6 +116,90 @@ function buildWelcomeScreen() {
 window.continueFromWelcome = function() {
   localStorage.setItem('mamaminds-onboarded', '1');
   showScreen('screen-lang');
+};
+
+function buildNameScreen() {
+  return `
+<div class="screen" id="screen-name">
+  <div class="onboard-wrap">
+    <div class="onboard-progress">
+      <div class="onboard-progress-bar">
+        <div class="onboard-progress-fill" style="width:50%"></div>
+      </div>
+      <span class="onboard-step-label">1 of 2</span>
+    </div>
+    <h2 class="onboard-title">What should we call you?</h2>
+    <p class="onboard-sub">Your name stays on your phone — it's never shared.</p>
+    <input
+      type="text"
+      id="name-input"
+      class="onboard-input"
+      placeholder="Your name"
+      maxlength="40"
+      autocomplete="off"
+      onkeydown="if(event.key==='Enter') submitName()">
+    <button class="action-btn onboard-cta" onclick="submitName()">Continue</button>
+    <button class="onboard-skip" onclick="skipName()">Skip</button>
+  </div>
+</div>`;
+}
+
+function buildStageScreen() {
+  const ranges = [
+    ['0-6w',   '0–6 weeks'],
+    ['6w-6m',  '6 weeks – 6 months'],
+    ['6m-12m', '6–12 months'],
+    ['1y+',    'Over a year'],
+  ];
+  return `
+<div class="screen" id="screen-stage">
+  <div class="onboard-wrap">
+    <div class="onboard-progress">
+      <div class="onboard-progress-bar">
+        <div class="onboard-progress-fill" style="width:100%"></div>
+      </div>
+      <span class="onboard-step-label">2 of 2</span>
+    </div>
+    <h2 class="onboard-title">How far postpartum are you?</h2>
+    <p class="onboard-sub">This helps us tailor your check-ins and resources.</p>
+    <div class="range-btns">
+      ${ranges.map(([val, label]) =>
+        `<button class="range-btn ${state.postpartumRange === val ? 'selected' : ''}"
+          onclick="selectPostpartumRange('${val}', this)">${label}</button>`
+      ).join('')}
+    </div>
+    <button class="onboard-skip" onclick="skipStage()">Skip this step</button>
+  </div>
+</div>`;
+}
+
+// ── Onboarding handlers ────────────────────
+window.submitName = function() {
+  const input = document.getElementById('name-input');
+  const val = input ? input.value.trim() : '';
+  if (val) {
+    state.userName = val;
+    saveState();
+  }
+  showScreen('screen-stage');
+};
+
+window.skipName = function() {
+  showScreen('screen-stage');
+};
+
+window.selectPostpartumRange = function(range, btn) {
+  document.querySelectorAll('#screen-stage .range-btn').forEach(b => b.classList.remove('selected'));
+  if (btn) btn.classList.add('selected');
+  state.postpartumRange = range;
+  saveState();
+  localStorage.setItem('mamaminds-profile-done', '1');
+  renderApp();
+};
+
+window.skipStage = function() {
+  localStorage.setItem('mamaminds-profile-done', '1');
+  renderApp();
 };
 
 function buildLangScreen() {
@@ -137,7 +231,7 @@ function buildHomeScreen() {
   <div class="home-hero">
     <div class="hero-row">
       <div>
-        <div class="greeting">${L.greeting}</div>
+        <div class="greeting">${getTimeGreeting()}</div>
         <div class="hero-name" id="hero-name">${state.userName}</div>
       </div>
       <div class="hero-badges">
@@ -281,6 +375,7 @@ function buildResultScreen() {
     <button class="action-btn secondary" onclick="resetAssessment()" id="r-btn3">
       ${L.result_btn_retake}
     </button>
+    <p class="result-disclaimer" id="result-disclaimer"></p>
     <div style="height:16px"></div>
   </div>
 </div>`;
@@ -332,6 +427,99 @@ function buildResourceArticles(tabKey) {
   `).join('');
 }
 
+function buildCommunityScreen() {
+  const L = state.L;
+  return `
+<div class="screen" id="screen-community">
+  <div class="community-header">
+    <div class="header-row">
+      <button class="back-btn" onclick="showScreen('screen-home')">${iconBack('#4A7C59')}</button>
+      <div>
+        <h2>${L.community_title || 'Community'}</h2>
+        <p>${L.community_sub || 'Stories from other mothers'}</p>
+      </div>
+    </div>
+  </div>
+  <div class="community-invite">
+    ${L.community_invite || 'Read what other mothers are going through. Sign in to share your own story.'}
+  </div>
+  <div class="scroll-body">
+    <div class="community-threads">
+      ${buildCommunityThreads()}
+    </div>
+  </div>
+  <div class="community-post-box">
+    <p class="community-post-label">${L.community_sign_in_prompt || 'Sign in to join the conversation'}</p>
+    <textarea class="community-post-input" disabled rows="2"
+      placeholder="${L.community_post_placeholder || 'Share your story...'}"></textarea>
+    <button class="community-post-btn" disabled>
+      ${L.community_sign_in_prompt || 'Sign in to join the conversation'}
+    </button>
+  </div>
+  ${buildBottomNav(3)}
+</div>`;
+}
+
+function buildCommunityThreads() {
+  const threads = [
+    {
+      author: 'Nomsa', location: 'Gauteng',
+      text: "Day 23 and I haven't slept more than 2 hours at a stretch. My mother keeps saying it's normal but something feels different. Has anyone else felt this way?",
+      replies: [
+        { author: 'Lerato', text: "Yes, I felt exactly this. Please tell your health worker — what you're describing is worth checking out, not just pushing through." },
+        { author: 'Thandi', text: "You're not alone. I felt this until week 8. It does lift, especially with support." },
+      ]
+    },
+    {
+      author: 'Lerato', location: 'Limpopo',
+      text: "My EPDS score was 16 last week. I was scared but my CHW came to visit and helped me get a clinic referral. If you've been putting off the assessment because you're scared of what it might show — please take it. Getting help was the best thing I did.",
+      replies: [
+        { author: 'Ayanda', text: "Thank you for sharing this. I've been putting it off for weeks. Taking it today." },
+        { author: 'Nomvula', text: "This is exactly what I needed to read. So glad you got the support you deserved." },
+        { author: 'Community Support', text: "So proud of you, Lerato. Your story will help others take that step too." },
+      ]
+    },
+    {
+      author: 'Thandi', location: 'KwaZulu-Natal',
+      text: "Nine months postpartum and some days I still feel completely disconnected from myself. I love my daughter so much — and I also don't recognise the face in the mirror. I didn't know you could feel both at once.",
+      replies: [
+        { author: 'Siphiwe', text: "You can, and it's real. That disconnect doesn't mean you're a bad mother. It means you're going through something hard." },
+        { author: 'Kelo', text: "Nine months here too. It comes in waves. Be gentle with yourself." },
+        { author: 'Lerato', text: "Both things can be true. You love your baby and you're also not okay. Both are allowed." },
+      ]
+    },
+    {
+      author: 'Ayanda', location: 'Eastern Cape',
+      text: "Started using this app two weeks ago. First time I've ever actually written down how I'm feeling instead of just pushing through. Just wanted to say — it helps.",
+      replies: [
+        { author: 'Nomsa', text: "This made me smile. Glad you're here. 🌿" },
+      ]
+    },
+  ];
+
+  return threads.map(t => `
+    <div class="thread">
+      <div class="thread-author">
+        <div class="thread-avatar">${t.author[0]}</div>
+        <div>
+          <div class="thread-author-name">${t.author}</div>
+          <div class="thread-location">${t.location}</div>
+        </div>
+      </div>
+      <div class="thread-text">${t.text}</div>
+      ${t.replies.length ? `
+        <div class="thread-replies-label">${t.replies.length} ${t.replies.length === 1 ? 'reply' : 'replies'}</div>
+        ${t.replies.map(r => `
+          <div class="thread-reply">
+            <div class="thread-reply-author">${r.author}</div>
+            <div class="thread-reply-text">${r.text}</div>
+          </div>
+        `).join('')}
+      ` : ''}
+    </div>
+  `).join('');
+}
+
 function buildAlertScreen() {
   const L = state.L;
   return `
@@ -366,7 +554,7 @@ function buildAlertScreen() {
     <div class="send-hint">${L.send_hint}</div>
     <div style="height:16px"></div>
   </div>
-  ${buildBottomNav(3)}
+  ${buildBottomNav(4)}
 </div>`;
 }
 
@@ -444,8 +632,8 @@ function buildProfileScreen() {
 
 function buildBottomNav(activeIndex) {
   const L = state.L;
-  const screens = ['screen-home', 'screen-assess', 'screen-resources', 'screen-alert'];
-  const icons = [iconHome, iconCheck2, iconBook2, iconBell2];
+  const screens = ['screen-home', 'screen-assess', 'screen-resources', 'screen-community', 'screen-alert'];
+  const icons = [iconHome, iconCheck2, iconBook2, iconPeople, iconBell2];
 
   return `
 <div class="bottom-nav">
@@ -454,7 +642,7 @@ function buildBottomNav(activeIndex) {
       onclick="showScreen('${screens[i]}')">
       ${icons[i]('currentColor')}
       <span>${label}</span>
-      ${i === 3 ? '<span class="nav-badge">!</span>' : ''}
+      ${i === 4 ? '<span class="nav-badge">!</span>' : ''}
     </button>
   `).join('')}
 </div>`;
@@ -482,9 +670,7 @@ window.continueFromLang = function() {
   state.L = LANGUAGES[state.lang] || LANGUAGES[DEFAULT_LANG];
   localStorage.setItem('mamaminds-visited', '1');
   saveState();
-  renderApp();
-  // Re-attach after full re-render
-  showScreen('screen-home');
+  renderApp(); // renderApp() picks the right screen based on onboarding flags
 };
 
 // ── Mood ───────────────────────────────────
@@ -496,6 +682,8 @@ window.selectMood = function(btn, index) {
 };
 
 // ── Assessment ─────────────────────────────
+let _autoAdvanceTimer = null; // guards against double-tap race on answer buttons
+
 window.renderQuestion = function() {
   const q = EPDS_QUESTIONS[state.currentQuestion];
   const L = state.L;
@@ -539,8 +727,22 @@ window.renderQuestion = function() {
 };
 
 window.selectAnswer = function(i) {
+  const isLast      = state.currentQuestion === EPDS_QUESTIONS.length - 1;
+  const wasUnanswered = state.answers[state.currentQuestion] === null;
+  const isNewAnswer   = state.answers[state.currentQuestion] !== i;
+
   state.answers[state.currentQuestion] = i;
-  renderQuestion();
+  renderQuestion(); // show the selection immediately
+
+  // Auto-advance on Q1–Q9 when this is a first answer or a changed answer.
+  // Q10 never auto-advances — user must tap "See my results" intentionally.
+  if (!isLast && (wasUnanswered || isNewAnswer)) {
+    clearTimeout(_autoAdvanceTimer);
+    _autoAdvanceTimer = setTimeout(() => {
+      state.currentQuestion++;
+      renderQuestion();
+    }, 220);
+  }
 };
 
 window.nextQuestion = function() {
@@ -554,6 +756,7 @@ window.nextQuestion = function() {
 };
 
 window.prevQuestion = function() {
+  clearTimeout(_autoAdvanceTimer); // cancel any pending auto-advance
   if (state.currentQuestion > 0) {
     state.currentQuestion--;
     renderQuestion();
@@ -584,8 +787,12 @@ function showResults() {
   if (headerEl)   headerEl.style.background = color;
   if (scoreEl)    scoreEl.textContent = score;
   if (categoryEl) categoryEl.textContent = (L.result_categories || {})[category] || '';
+
   if (meaningEl)  meaningEl.textContent = (L.result_meanings || {})[category] || '';
   if (stepsEl)    stepsEl.textContent = (L.result_steps_text || {})[category] || '';
+
+  const disclaimerEl = document.getElementById('result-disclaimer');
+  if (disclaimerEl) disclaimerEl.textContent = L.epds_disclaimer || '';
 
   showScreen('screen-result');
 }
@@ -632,6 +839,17 @@ window.confirmDeleteData = function() {
 };
 
 // ── Helpers ────────────────────────────────
+function getTimeGreeting() {
+  const L = state.L;
+  if (L.greetings) {
+    const hour = new Date().getHours();
+    if (hour < 12) return L.greetings.morning;
+    if (hour < 17) return L.greetings.afternoon;
+    return L.greetings.evening;
+  }
+  return L.greeting;
+}
+
 function getDaysSinceLastCheckin() {
   const last = localStorage.getItem('mamaminds-last-checkin');
   if (!last) return 0;
@@ -687,4 +905,7 @@ function iconHome(color) {
 }
 function iconBell2(color) {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`;
-           }
+}
+function iconPeople(color) {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+}
