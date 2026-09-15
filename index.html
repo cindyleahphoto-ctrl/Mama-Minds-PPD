@@ -2,15 +2,63 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <script>
+    /* Applies a saved manual light/dark choice before first paint, so
+       there's no flash of the wrong theme. See applyTheme()/toggleTheme()
+       in src/main.js — this mirrors that logic just enough to run early. */
+    (function() {
+      try {
+        var t = localStorage.getItem('mamaminds-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mama Minds - Mental Health Support</title>
+  <title>Mama Minds — Postpartum Mental Health Support</title>
+  <meta name="description" content="A free, private postpartum mental health app for mothers in Africa. Take the Edinburgh Postnatal Depression Scale (EPDS) check-in, track your mood, and find support resources — works offline, and nothing you enter ever leaves your phone.">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Mama Minds — Postpartum Mental Health Support">
+  <meta property="og:description" content="A free, private postpartum mental health app for mothers in Africa. EPDS check-ins, mood tracking, and support resources — works offline, nothing leaves your phone.">
+  <meta property="og:image" content="https://cindyleahphoto-ctrl.github.io/Mama-Minds-PPD/images/og-preview.png">
+  <meta property="og:url" content="https://cindyleahphoto-ctrl.github.io/Mama-Minds-PPD/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Mama Minds — Postpartum Mental Health Support">
+  <meta name="twitter:description" content="A free, private postpartum mental health app for mothers in Africa. EPDS check-ins, mood tracking, and support resources — works offline, nothing leaves your phone.">
+  <meta name="twitter:image" content="https://cindyleahphoto-ctrl.github.io/Mama-Minds-PPD/images/og-preview.png">
+
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/svg+xml" href="./icon.svg">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="stylesheet" href="./src/styles/main.css">
+  <style>
+    /* Inlined so the preloader paints before main.css finishes loading.
+       The illustration's own backdrop is baked into its PNG (sampled at
+       #ECD9CB, not theme-aware), so this background only shows in the
+       margin around it — matched exactly so there's no visible seam. */
+    #preloader {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--illustration-bg, #ECD9CB);
+    }
+    #preloader img { width: 240px; height: 240px; }
+  </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div id="preloader" role="status" aria-label="Loading Mama Minds">
+      <img src="./mama-minds-loading.svg" alt="" width="500" height="500">
+    </div>
+  </div>
   <script type="module" src="./src/main.js"></script>
+  <!--
+    Cookieless, privacy-friendly page-view analytics (GoatCounter — no
+    cookies, no personal identifiers; see the Privacy Policy screen in-app).
+    PLACEHOLDER: replace YOUR-CODE with your own GoatCounter site code after
+    creating a free account at https://www.goatcounter.com/ — the site works
+    identically with or without this until then.
+  -->
+  <script data-goatcounter="https://YOUR-CODE.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>

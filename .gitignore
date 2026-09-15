@@ -2,3 +2,16 @@ node_modules/
 dist/
 *.log
 .claude/
+
+# Secrets / private config — never commit these
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editor / OS junk
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
