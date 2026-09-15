@@ -8,8 +8,7 @@ export const RESOURCES = {
     {
       id: 'what-is-ppd',
       title: 'What is postpartum depression?',
-      offline: true,
-      open: true,
+      open: false,
       content: `
         <p>Postpartum depression (PPD) is a medical condition — not a personal failure or weakness. It affects <strong>1 in 5 mothers</strong> in South Africa, and is more common in women facing poverty, lack of support, or difficult circumstances.</p>
         <div class="info-box">PPD is not "baby blues." Baby blues last 2 weeks. PPD can last months and needs care — just like a physical illness.</div>
@@ -35,7 +34,6 @@ export const RESOURCES = {
     {
       id: 'blues-vs-ppd',
       title: 'The difference between PPD and baby blues',
-      offline: true,
       open: false,
       content: `
         <h4>Baby blues (normal)</h4>
@@ -58,7 +56,6 @@ export const RESOURCES = {
     {
       id: 'ppd-africa',
       title: 'PPD in the African context — you are not alone',
-      offline: true,
       open: false,
       content: `
         <p>In many African communities, there is pressure to be strong, to celebrate a new baby, and not to show weakness. Admitting you are struggling can feel shameful. But PPD is recognised globally as a medical illness — not a sign of weakness or a failure as a mother or woman.</p>
@@ -86,8 +83,7 @@ export const RESOURCES = {
     {
       id: 'breathing',
       title: '4-7-8 breathing exercise',
-      offline: true,
-      open: true,
+      open: false,
       content: `
         <p>This exercise calms your nervous system in minutes. You can do it anywhere — sitting, lying down, even nursing your baby.</p>
         <div class="exercise-step"><div class="step-label">Step 1</div><div class="step-text">Sit or lie comfortably. Place one hand on your chest, one on your belly.</div></div>
@@ -101,7 +97,6 @@ export const RESOURCES = {
     {
       id: 'grounding',
       title: 'Grounding: the 5-4-3-2-1 technique',
-      offline: true,
       open: false,
       content: `
         <p>When you feel overwhelmed, anxious, or disconnected, this technique brings you back to the present moment. It works immediately.</p>
@@ -116,7 +111,6 @@ export const RESOURCES = {
     {
       id: 'sleep',
       title: 'Sleep & rest strategies for new mothers',
-      offline: true,
       open: false,
       content: `
         <h4>Why sleep matters for PPD</h4>
@@ -136,7 +130,6 @@ export const RESOURCES = {
     {
       id: 'mood-tracking',
       title: 'Daily mood tracking — why it helps',
-      offline: true,
       open: false,
       content: `
         <p>Tracking how you feel each day — even just with a simple word or number — helps you and your health worker notice patterns and see your progress.</p>
@@ -162,8 +155,7 @@ export const RESOURCES = {
     {
       id: 'explain-ppd',
       title: 'How to explain PPD to your family',
-      offline: true,
-      open: true,
+      open: false,
       content: `
         <p>It can be hard to tell family members what you are going through, especially if they do not understand PPD or think it is weakness. Here are some ways to start the conversation.</p>
         <h4>What to say</h4>
@@ -188,7 +180,6 @@ export const RESOURCES = {
     {
       id: 'peer-support',
       title: 'Peer support — finding other mothers who understand',
-      offline: true,
       open: false,
       content: `
         <p>Talking to another mother who has experienced PPD can be one of the most healing things you can do. You do not feel so alone. Many clinics and community centres in South Africa run peer support groups.</p>
@@ -207,7 +198,6 @@ export const RESOURCES = {
     {
       id: 'self-care',
       title: 'Caring for yourself while caring for your baby',
-      offline: true,
       open: false,
       content: `
         <p>You cannot pour from an empty cup. Caring for yourself is not selfish — it is what allows you to care for your baby.</p>
@@ -230,8 +220,7 @@ export const RESOURCES = {
     {
       id: 'sa-hotlines',
       title: 'South Africa — free helplines',
-      offline: true,
-      open: true,
+      open: false,
       isCrisis: true,
       content: `
         <div class="crisis-banner">
@@ -277,7 +266,7 @@ export const RESOURCES = {
         <h4 style="margin-top:16px">Emergency services</h4>
         <div class="hotline-card" style="background:var(--bg-soft)">
           <div class="hotline-name" style="color:var(--text-main)">Emergency services</div>
-          <div class="hotline-number" style="color:var(--red-dark)">10177 (Ambulance) · 10111 (Police)</div>
+          <div class="hotline-number" style="color:var(--red-on-pale)">10177 (Ambulance) · 10111 (Police)</div>
           <div class="hotline-desc" style="color:var(--text-muted)">Go to your nearest public clinic or hospital emergency room if you are in immediate danger</div>
         </div>
       `
@@ -288,8 +277,7 @@ export const RESOURCES = {
     {
       id: 'clinic-visit',
       title: 'What to expect at a PPD clinic visit',
-      offline: true,
-      open: true,
+      open: false,
       content: `
         <p>Many women are afraid to go to a clinic because they fear judgment, or that their baby will be taken away. <strong>This will not happen.</strong> Seeking help makes you a good mother — not a dangerous one.</p>
         <h4>What happens at a visit</h4>
@@ -313,7 +301,6 @@ export const RESOURCES = {
     {
       id: 'patient-rights',
       title: 'Your rights as a patient in South Africa',
-      offline: true,
       open: false,
       content: `
         <p>Under the South African Constitution and the National Health Act, you have the right to:</p>
@@ -329,7 +316,7 @@ export const RESOURCES = {
         <p>Contact the Office of Health Standards Compliance (OHSC) or the Health Ombudsman:</p>
         <div class="hotline-card" style="background:var(--bg-soft)">
           <div class="hotline-name" style="color:var(--text-main)">Health Ombudsman</div>
-          <div class="hotline-number" style="color:var(--terra)">0800 233 566</div>
+          <div class="hotline-number" style="color:var(--terra-text)">0800 233 566</div>
           <div class="hotline-desc" style="color:var(--text-muted)">Free · Complaints about public health facilities</div>
         </div>
       `
@@ -337,7 +324,6 @@ export const RESOURCES = {
     {
       id: 'care-plan',
       title: 'Downloadable care plan for your health worker',
-      offline: true,
       open: false,
       content: `
         <p>Bring this information to your next clinic visit to help your nurse or doctor understand your situation.</p>
