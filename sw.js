@@ -1,5 +1,5 @@
 /* Mama Minds — Service Worker for offline support */
-const CACHE_NAME = 'mama-minds-v2';
+const CACHE_NAME = 'mama-minds-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -7,7 +7,8 @@ const ASSETS = [
   './icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './images/cover-illustration.png'
+  './images/cover-illustration.png',
+  './mama-minds-loading.svg'
 ];
 
 self.addEventListener('install', event => {

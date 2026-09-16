@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+
+Sitemap: https://cindyleahphoto-ctrl.github.io/Mama-Minds-PPD/sitemap.xml
