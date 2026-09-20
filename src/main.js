@@ -7,6 +7,36 @@ import { EPDS_QUESTIONS, calculateScore, getScoreCategory, getScoreColor } from 
 import { RESOURCES } from './data/resources.js';
 import { PUBLIC_HOSPITALS } from './data/hospitals.js';
 
+// ── PWA install ────────────────────────────
+// Chrome/Android fires this instead of letting the browser show its own
+// install UI, so we stash the event and trigger it ourselves from the
+// in-app install button instead.
+let mmInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  mmInstallPrompt = e;
+  const btn = document.getElementById('mm-install-btn');
+  if (btn) btn.style.display = 'flex';
+});
+
+window.addEventListener('appinstalled', () => {
+  mmInstallPrompt = null;
+  const btn = document.getElementById('mm-install-btn');
+  if (btn) btn.style.display = 'none';
+});
+
+// iOS Safari never fires beforeinstallprompt and has no programmatic
+// install API, so it gets its own always-visible button that opens an
+// instructions modal instead of a native prompt.
+function isIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+}
+
+function isInStandaloneMode() {
+  return window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+}
+
 // ── State ──────────────────────────────────
 let state = {
   lang: DEFAULT_LANG,
@@ -19,6 +49,7 @@ let state = {
   memberSince: null,     // ISO date string, set once when onboarding first completes
   scoreHistory: [],      // [{ score, date, postpartumRange }], newest last, capped at 10
   contacts: null,        // lazily initialised from DEFAULT_CONTACTS by getContacts()
+  communityLikes: {},    // { 'post-0': true, 'reply-0-2': true, ... } — this device's likes only
 };
 
 // ── Init ───────────────────────────────────
@@ -69,6 +100,7 @@ function saveState() {
       postpartumRange: state.postpartumRange,
       memberSince: state.memberSince,
       contacts: state.contacts,
+      communityLikes: state.communityLikes,
     };
     localStorage.setItem('mamaminds-state', JSON.stringify(toSave));
   } catch (e) {
@@ -114,6 +146,15 @@ function renderApp() {
   root.innerHTML = buildAppHTML();
   attachEventListeners();
 
+  // The install button starts hidden in the freshly-built markup — if the
+  // browser already fired beforeinstallprompt earlier this session (it only
+  // fires once), re-show it now so a re-render (language switch, onboarding
+  // step) doesn't silently hide an install option that's still available.
+  if (mmInstallPrompt) {
+    const installBtn = document.getElementById('mm-install-btn');
+    if (installBtn) installBtn.style.display = 'flex';
+  }
+
   const hasOnboarded    = localStorage.getItem('mamaminds-onboarded');
   const hasVisited      = localStorage.getItem('mamaminds-visited');
   const hasProfileDone  = localStorage.getItem('mamaminds-profile-done');
@@ -147,6 +188,23 @@ function buildAppHTML() {
   ${buildProfileScreen()}
   ${buildPrivacyScreen()}
   ${buildTermsScreen()}
+  ${buildIOSInstallModal()}
+  <input type="file" id="import-file-input" accept="application/json" style="display:none" onchange="handleImportFile(this)">
+</div>`;
+}
+
+function buildIOSInstallModal() {
+  const L = state.L;
+  return `
+<div id="mm-ios-modal" class="modal-overlay ios-install-overlay" style="display:none" onclick="this.style.display='none'">
+  <div class="modal-card ios-install-card" onclick="event.stopPropagation()">
+    <p class="ios-install-steps">
+      ${L.ios_install_step1}<br>
+      <strong>${L.ios_install_step2}</strong><br>
+      ${L.ios_install_step3}
+    </p>
+    <button onclick="document.getElementById('mm-ios-modal').style.display='none'" class="action-btn">${L.ios_install_close}</button>
+  </div>
 </div>`;
 }
 
@@ -160,6 +218,7 @@ function buildWelcomeScreen() {
     <button class="action-btn welcome-btn" onclick="continueFromWelcome()">
       ${state.L.welcome_btn_label}
     </button>
+    <a class="welcome-restore-link" onclick="triggerImportData()">${state.L.import_data_label}</a>
   </div>
 </div>`;
 }
@@ -354,16 +413,31 @@ function buildHomeScreen() {
       </div>
     </div>
 
+    ${!isInStandaloneMode() && !isIOS() ? `
+    <div id="mm-install-btn" class="install-card" style="display:none" onclick="handleInstall()">
+      <div class="card-icon ci-green">📲</div>
+      <div class="ab-text">
+        <div class="card-title">${L.install_btn_label}</div>
+        <div class="card-sub">${L.install_btn_sub}</div>
+      </div>
+    </div>` : ''}
+    ${isIOS() && !isInStandaloneMode() ? `
+    <div id="mm-install-btn-ios" class="install-card" onclick="handleInstallIOS()">
+      <div class="card-icon ci-green">📲</div>
+      <div class="ab-text">
+        <div class="card-title">${L.install_btn_label}</div>
+        <div class="card-sub">${L.install_btn_sub}</div>
+      </div>
+    </div>` : ''}
+
     <div class="section-label">${L.progress_label}</div>
+    ${recentScores.length ? `
+    <div class="score-cards-row">${recentScores.map(buildScoreCard).join('')}</div>` : `
     <div class="score-summary">
-      ${recentScores.length > 1 ? `
-      <div class="score-tabs" id="score-tabs">
-        ${recentScores.map((e, i) => `
-          <button class="score-tab ${i === 0 ? 'active' : ''}" onclick="showScoreTab(${i}, this)">${formatHistoryDate(e.date)}</button>
-        `).join('')}
-      </div>` : ''}
-      <div id="score-tab-content">${buildScoreCardContent(recentScores[0] || null)}</div>
-    </div>
+      <div class="score-row"><span class="text-muted text-small">${L.last_score}</span><span class="text-muted" style="font-size:12px">—</span></div>
+      <div class="score-bar"><div class="score-fill" style="width:0%"></div></div>
+      <div class="score-ticks"><span class="text-muted" style="font-size:10px">0</span><span class="text-muted" style="font-size:10px">30</span></div>
+    </div>`}
     <div style="height:16px"></div>
   </div>
 
@@ -371,34 +445,18 @@ function buildHomeScreen() {
 </div>`;
 }
 
-function buildScoreCardContent(entry) {
-  const L = state.L;
-  const score = entry ? entry.score : null;
+function buildScoreCard(entry) {
+  const color = getScoreColor(entry.score);
   return `
-    <div class="score-row">
-      <span class="text-muted text-small">${L.last_score}</span>
-      <span style="font-size:12px;font-weight:500;color:var(--sage-text)">
-        ${score !== null ? `${score} — ${getScoreLabel(score)}` : '—'}
-      </span>
-    </div>
-    <div class="score-bar">
-      <div class="score-fill" style="width:${score !== null ? (score/30*100) : 0}%"></div>
-    </div>
-    <div class="score-ticks">
-      <span class="text-muted" style="font-size:10px">0</span>
-      <span class="text-muted" style="font-size:10px">30</span>
+    <div class="score-card-mini">
+      <div class="score-mini-date">${formatHistoryDate(entry.date)}</div>
+      <div class="score-mini-score" style="color:${color}">${entry.score}</div>
+      <div class="score-mini-label" style="color:${color}">${getScoreLabel(entry.score)}</div>
+      <div class="score-bar">
+        <div class="score-fill" style="width:${entry.score / 30 * 100}%; background:${color}"></div>
+      </div>
     </div>`;
 }
-
-window.showScoreTab = function(index, btn) {
-  const recentScores = state.scoreHistory.slice(-3).reverse();
-  const entry = recentScores[index];
-  if (!entry) return;
-  document.querySelectorAll('#score-tabs .score-tab').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  const content = document.getElementById('score-tab-content');
-  if (content) content.innerHTML = buildScoreCardContent(entry);
-};
 
 function buildAssessScreen() {
   const L = state.L;
@@ -456,7 +514,6 @@ function buildResultScreen() {
       ${L.result_btn_retake}
     </button>
     <p class="result-disclaimer" id="result-disclaimer"></p>
-    <div style="height:16px"></div>
   </div>
 </div>`;
 }
@@ -515,7 +572,7 @@ function buildResourceArticles(tabKey) {
 const COMMUNITY_THREADS = [
   {
     title: 'Is it normal to feel nothing when I hold my baby?',
-    author: 'Mama_Jozi', location: 'Gauteng', time: '2 days ago',
+    author: 'Mama_Jozi', location: 'Gauteng', time: '2 days ago', likes: 24,
     post: "She's six weeks old and everyone keeps saying I should be overflowing with love, but most days I just feel numb. I do everything she needs — feed her, change her, rock her when she cries — but it feels like I'm watching myself do it from outside. Is this normal? Will it pass?",
     replies: [
       { author: 'Thando_Mzansi', time: '1 day ago', helpful: 12, text: "This is so much more common than anyone tells you. I felt exactly this with my first. It's worth mentioning to your clinic sister at your next check-up — not because something is wrong with you, but because there's support for this." },
@@ -527,7 +584,7 @@ const COMMUNITY_THREADS = [
   },
   {
     title: 'How did you get through the first 6 weeks?',
-    author: 'NewMama_CPT', location: 'Western Cape', time: '5 hours ago',
+    author: 'NewMama_CPT', location: 'Western Cape', time: '5 hours ago', likes: 31,
     post: "Three weeks in and I'm running on no sleep, load shedding is messing up the little routine we had, and I feel like I'm barely keeping my head above water. For those who made it through — what actually helped?",
     replies: [
       { author: 'Mama_Jozi', time: '4 hours ago', helpful: 15, text: "Honestly, lowering my expectations of myself helped the most. Some days 'getting through' meant the baby was fed and I'd eaten one meal. That was enough." },
@@ -539,7 +596,7 @@ const COMMUNITY_THREADS = [
   },
   {
     title: "My mother-in-law keeps giving advice I didn't ask for",
-    author: 'Umama_KZN', location: 'KwaZulu-Natal', time: '1 day ago',
+    author: 'Umama_KZN', location: 'KwaZulu-Natal', time: '1 day ago', likes: 19,
     post: "I know she means well and I respect that she raised her own children, but every visit comes with a new instruction — how I'm holding the baby wrong, what I should be feeding her, why I shouldn't let her sleep so much. I'm exhausted and it's making me dread her visits.",
     replies: [
       { author: 'NewMama_CPT', time: '22 hours ago', helpful: 9, text: "This is so common in our culture, the elders feel it's their place to guide us. Doesn't make it less tiring though." },
@@ -551,7 +608,7 @@ const COMMUNITY_THREADS = [
   },
   {
     title: 'Anyone else feel like they lost themselves after birth?',
-    author: 'Mama_4721', location: 'Free State', time: '3 days ago',
+    author: 'Mama_4721', location: 'Free State', time: '3 days ago', likes: 27,
     post: "I used to know exactly who I was — my job, my friends, my hobbies. Now most days I'm just 'the baby's mom' and I don't recognise myself anymore. I love her more than anything but I miss me too. Does anyone else feel this?",
     replies: [
       { author: 'Umama_KZN', time: '3 days ago', helpful: 14, text: "Every single day. It's a real grief even though we're not allowed to call it that because we 'should' be grateful." },
@@ -563,7 +620,7 @@ const COMMUNITY_THREADS = [
   },
   {
     title: 'What actually helped you sleep when baby sleeps?',
-    author: 'NewMama_Joburg', location: 'Gauteng', time: '6 hours ago',
+    author: 'NewMama_Joburg', location: 'Gauteng', time: '6 hours ago', likes: 15,
     post: "Everyone says 'sleep when the baby sleeps' like it's that easy. My mind races the second I lie down — dishes, washing, whether she's breathing okay. What actually worked for you?",
     replies: [
       { author: 'Mama_4721', time: '5 hours ago', helpful: 10, text: 'Putting my phone in another room. The urge to check it the second I lay down was killing any chance of rest.' },
@@ -575,7 +632,7 @@ const COMMUNITY_THREADS = [
   },
   {
     title: "Told my doctor I was struggling — here's what happened",
-    author: 'Thando_Mzansi', location: 'Eastern Cape', time: '4 days ago',
+    author: 'Thando_Mzansi', location: 'Eastern Cape', time: '4 days ago', likes: 36,
     post: "I finally said the words out loud at my 6-week check-up: 'I don't think I'm okay.' I was so scared she'd judge me or worse, get the social worker involved. Instead she just listened, gave me an EPDS-style questionnaire, and referred me to a counsellor at the clinic. It wasn't scary at all in the end.",
     replies: [
       { author: 'Mama_Jozi', time: '4 days ago', helpful: 18, text: "Thank you for sharing this. I've been too scared to say anything at my appointments." },
@@ -654,6 +711,22 @@ function buildThreadDetailScreen() {
 </div>`;
 }
 
+function buildLikeButton(id, baseCount) {
+  const liked = !!state.communityLikes[id];
+  const count = baseCount + (liked ? 1 : 0);
+  return `<button type="button" class="like-btn ${liked ? 'liked' : ''}" onclick="toggleLike('${id}', ${baseCount}, this)">${iconHeart(liked ? 'var(--rose)' : 'var(--text-muted)')}<span>${count}</span></button>`;
+}
+
+window.toggleLike = function(id, baseCount, btn) {
+  const liked = !state.communityLikes[id];
+  if (liked) state.communityLikes[id] = true;
+  else delete state.communityLikes[id];
+  saveState();
+  const count = baseCount + (liked ? 1 : 0);
+  btn.classList.toggle('liked', liked);
+  btn.innerHTML = `${iconHeart(liked ? 'var(--rose)' : 'var(--text-muted)')}<span>${count}</span>`;
+};
+
 window.openThread = function(i) {
   const L = state.L;
   const t = COMMUNITY_THREADS[i];
@@ -674,16 +747,17 @@ window.openThread = function(i) {
           </div>
         </div>
         <div class="thread-text">${t.post}</div>
+        ${buildLikeButton(`post-${i}`, t.likes || 0)}
       </div>
       <div class="thread-replies-label">${(L.community_replies_label || '{n} replies').replace('{n}', t.replies.length)}</div>
-      ${t.replies.map(r => `
+      ${t.replies.map((r, j) => `
         <div class="thread-reply">
           <div class="thread-reply-header">
             <span class="thread-reply-author">${r.author}</span>
             <span class="thread-reply-time">${r.time}</span>
           </div>
           <div class="thread-reply-text">${r.text}</div>
-          <div class="thread-reply-helpful">${iconHeart('var(--rose)')}<span>${r.helpful}</span></div>
+          ${buildLikeButton(`reply-${i}-${j}`, r.helpful || 0)}
         </div>
       `).join('')}
     `;
@@ -748,12 +822,38 @@ function buildAlertScreen() {
 //                          we won't guess/display a number we can't verify
 //   editable: true       -> fully user-managed: name, channel, phone, removable
 const DEFAULT_CONTACTS = [
-  { id: 'chw', section: 'providers', initials: 'HW', avatarClass: 'av-blue', name: 'Sister Nomvula (CHW)', roleKey: 'contact_role_chw', channel: 'whatsapp', checked: false, phone: '', editable: false },
-  { id: 'clinic', section: 'providers', initials: 'CL', avatarClass: 'av-rose', name: '', roleKey: 'contact_role_maternity', channel: 'sms', checked: false, phone: '', editable: 'hospital' },
-  { id: 'mother', section: 'loved_ones', avatarClass: 'av-green', name: 'Mama Khumalo', channel: 'whatsapp', checked: true, phone: '', editable: true },
-  { id: 'partner', section: 'loved_ones', avatarClass: 'av-gold', name: 'Thabo Sithole', channel: 'sms', checked: true, phone: '', editable: true },
+  { id: 'chw', section: 'providers', initials: 'HW', avatarClass: 'av-blue', name: 'Sister Nomvula (CHW)', roleKey: 'contact_role_chw', channel: 'whatsapp', checked: false, phone: '', countryCode: '+27', editable: false },
+  { id: 'clinic', section: 'providers', initials: 'CL', avatarClass: 'av-rose', name: '', roleKey: 'contact_role_maternity', channel: 'sms', checked: false, phone: '', countryCode: '+27', editable: 'hospital' },
+  { id: 'mother', section: 'loved_ones', avatarClass: 'av-green', name: 'Mama Khumalo', channel: 'whatsapp', checked: true, phone: '', countryCode: '+27', editable: true },
+  { id: 'partner', section: 'loved_ones', avatarClass: 'av-gold', name: 'Thabo Sithole', channel: 'sms', checked: true, phone: '', countryCode: '+27', editable: true },
 ];
 const NEW_CONTACT_AVATAR_CLASSES = ['av-green', 'av-gold', 'av-rose', 'av-blue'];
+
+// Dial codes for the app's core audience: South Africa plus its
+// neighbours and the countries covered by the app's other languages
+// (Kiswahili -> Kenya/Tanzania). Not exhaustive by design — a plain +xx
+// text entry would work for any country, this list just makes the common
+// cases a one-tap pick instead of a lookup.
+const COUNTRY_CODES = [
+  { code: '+27', label: '🇿🇦 +27 South Africa' },
+  { code: '+266', label: '🇱🇸 +266 Lesotho' },
+  { code: '+268', label: '🇸🇿 +268 Eswatini' },
+  { code: '+264', label: '🇳🇦 +264 Namibia' },
+  { code: '+267', label: '🇧🇼 +267 Botswana' },
+  { code: '+263', label: '🇿🇼 +263 Zimbabwe' },
+  { code: '+258', label: '🇲🇿 +258 Mozambique' },
+  { code: '+254', label: '🇰🇪 +254 Kenya' },
+  { code: '+255', label: '🇹🇿 +255 Tanzania' },
+  { code: '+256', label: '🇺🇬 +256 Uganda' },
+  { code: '+234', label: '🇳🇬 +234 Nigeria' },
+  { code: '+233', label: '🇬🇭 +233 Ghana' },
+  { code: '+44', label: '🇬🇧 +44 United Kingdom' },
+  { code: '+1', label: '🇺🇸 +1 US / Canada' },
+];
+
+function buildCountryCodeOptions(selected) {
+  return COUNTRY_CODES.map(c => `<option value="${c.code}" ${c.code === selected ? 'selected' : ''}>${c.label}</option>`).join('');
+}
 
 function getContacts() {
   if (!state.contacts) {
@@ -796,8 +896,11 @@ function buildContactCard(contact) {
     <input type="text" class="contact-name-input" placeholder="${L.hospital_name_placeholder || 'Nearest public hospital'}"
       value="${escapeHtml(contact.name)}" oninput="updateContactName('${contact.id}', this.value)">
     <button type="button" class="locate-hospital-btn" onclick="locateNearestHospital()">${L.locate_hospital_btn || '📍 Find my nearest hospital'}</button>
-    <input type="tel" class="contact-phone-input" placeholder="${L.alert_phone_placeholder || 'Add phone number'}"
-      value="${escapeHtml(contact.phone)}" oninput="updateContactPhone('${contact.id}', this.value)">
+    <div class="phone-row">
+      <select class="country-code-select" aria-label="Country code" onchange="updateContactCountry('${contact.id}', this.value)">${buildCountryCodeOptions(contact.countryCode || '+27')}</select>
+      <input type="tel" class="contact-phone-input" placeholder="${L.alert_phone_placeholder || 'Add phone number'}"
+        value="${escapeHtml(contact.phone)}" oninput="updateContactPhone('${contact.id}', this.value)">
+    </div>
     <p class="hospital-note">${L.hospital_verify_note || "Please confirm this number yourself before relying on it — we can't guarantee it's current."}</p>
   </div>
   <input type="checkbox" ${contact.checked ? 'checked' : ''} onchange="toggleContact('${contact.id}', this.checked)" style="margin-left:auto" />
@@ -815,8 +918,11 @@ function buildContactCard(contact) {
       <button type="button" class="channel-btn ${contact.channel === 'whatsapp' ? 'active' : ''}" onclick="setContactChannel('${contact.id}','whatsapp', this)">WhatsApp</button>
       <button type="button" class="channel-btn ${contact.channel === 'sms' ? 'active' : ''}" onclick="setContactChannel('${contact.id}','sms', this)">SMS</button>
     </div>
-    <input type="tel" class="contact-phone-input" placeholder="${L.alert_phone_placeholder || 'Add phone number'}"
-      value="${escapeHtml(contact.phone)}" oninput="updateContactPhone('${contact.id}', this.value)">
+    <div class="phone-row">
+      <select class="country-code-select" aria-label="Country code" onchange="updateContactCountry('${contact.id}', this.value)">${buildCountryCodeOptions(contact.countryCode || '+27')}</select>
+      <input type="tel" class="contact-phone-input" placeholder="${L.alert_phone_placeholder || 'Add phone number'}"
+        value="${escapeHtml(contact.phone)}" oninput="updateContactPhone('${contact.id}', this.value)">
+    </div>
   </div>
   <div class="contact-actions">
     <input type="checkbox" ${contact.checked ? 'checked' : ''} onchange="toggleContact('${contact.id}', this.checked)" />
@@ -829,6 +935,13 @@ window.updateContactPhone = function(id, value) {
   const contact = getContacts().find(c => c.id === id);
   if (!contact) return;
   contact.phone = value;
+  saveState();
+};
+
+window.updateContactCountry = function(id, value) {
+  const contact = getContacts().find(c => c.id === id);
+  if (!contact) return;
+  contact.countryCode = value;
   saveState();
 };
 
@@ -867,6 +980,7 @@ window.addContact = function() {
     channel: 'whatsapp',
     checked: true,
     phone: '',
+    countryCode: '+27',
     editable: true,
   };
   contacts.push(newContact);
@@ -925,15 +1039,22 @@ function haversineDistanceKm(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// wa.me requires an international number with no leading 0/+. South African
-// numbers are commonly typed in local format (e.g. 082...), so assume SA
-// (+27) when no country code was given — this app's content is SA-specific
-// throughout (SADAG hotlines, Gauteng, Rand pricing).
-function toWhatsAppNumber(phone) {
+// wa.me requires an international number with no leading 0/+. Numbers are
+// commonly typed in local format (e.g. 082...) with the leading 0 standing
+// in for the country code the contact picks from the country-code select,
+// so that 0 is dropped in favour of the selected dial code. A number
+// already typed with a leading + is trusted as-is (the user typed the full
+// international form themselves).
+function toIntlNumber(phone, countryCode) {
   const cleaned = phone.replace(/[^\d+]/g, '');
-  if (cleaned.startsWith('+')) return cleaned.slice(1);
-  if (cleaned.startsWith('0')) return '27' + cleaned.slice(1);
-  return cleaned;
+  if (cleaned.startsWith('+')) return cleaned;
+  const dial = (countryCode || '+27').replace(/[^\d]/g, '');
+  if (cleaned.startsWith('0')) return '+' + dial + cleaned.slice(1);
+  return '+' + dial + cleaned;
+}
+
+function toWhatsAppNumber(phone, countryCode) {
+  return toIntlNumber(phone, countryCode).slice(1);
 }
 
 function buildProfileScreen() {
@@ -998,6 +1119,7 @@ function buildProfileScreen() {
         <span class="profile-label">${L.data_stored_label}</span>
         <span class="status-green">${L.yes_label}</span>
       </div>
+      <div class="data-warning">${L.cache_warning_text}</div>
       <div class="profile-row">
         <span class="profile-label">${L.share_data_label}</span>
         <span class="profile-value">${L.off_label}</span>
@@ -1010,6 +1132,15 @@ function buildProfileScreen() {
         <span class="profile-label">${L.terms_label || 'Terms & Conditions'}</span>
         <a class="text-link" onclick="showScreen('screen-terms')">${L.view_label || 'View'} →</a>
       </div>
+      <div class="profile-row" onclick="exportData()" style="cursor:pointer">
+        <span class="profile-label">${L.export_data_label}</span>
+        <a class="text-link">${L.export_data_btn}</a>
+      </div>
+      <div class="profile-row" onclick="triggerImportData()" style="cursor:pointer">
+        <span class="profile-label">${L.import_data_label}</span>
+        <a class="text-link">${L.import_data_btn}</a>
+      </div>
+      <p class="backup-hint">${L.backup_hint_text}</p>
       <div class="profile-row" onclick="confirmDeleteData()" style="cursor:pointer">
         <span class="status-red">${L.delete_data}</span>
       </div>
@@ -1411,14 +1542,14 @@ window.sendAlert = function() {
   // wa.me only supports one number per link, so only the first checked
   // WhatsApp contact gets opened — the SMS side supports multiple
   // recipients on one link, so every checked SMS contact gets included.
-  const smsNumbers = recipients.filter(c => c.channel === 'sms').map(c => c.phone.trim());
+  const smsNumbers = recipients.filter(c => c.channel === 'sms').map(c => toIntlNumber(c.phone, c.countryCode));
   const waContact = recipients.find(c => c.channel === 'whatsapp');
 
   if (smsNumbers.length > 0) {
     window.open(`sms:${smsNumbers.join(',')}?body=${encodeURIComponent(message)}`, '_blank');
   }
   if (waContact) {
-    window.open(`https://wa.me/${toWhatsAppNumber(waContact.phone)}?text=${encodeURIComponent(message)}`, '_blank');
+    window.open(`https://wa.me/${toWhatsAppNumber(waContact.phone, waContact.countryCode)}?text=${encodeURIComponent(message)}`, '_blank');
   }
 
   btn.textContent = L.alert_sent_label || '✓ Alert sent';
@@ -1431,16 +1562,143 @@ window.sendAlert = function() {
   }, 3500);
 };
 
+// ── Toast ────────────────────────────────
+function showToast(message, type = 'default') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.className = `toast${type === 'success' ? ' toast-success' : type === 'danger' ? ' toast-danger' : ''}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('toast-show'));
+  setTimeout(() => {
+    toast.classList.remove('toast-show');
+    setTimeout(() => toast.remove(), 250);
+  }, 3200);
+}
+
+// ── Confirm modal ────────────────────────────────
+function showConfirmModal({ title, message, confirmLabel, cancelLabel, onConfirm }) {
+  const L = state.L;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-title">${title}</div>
+      <div class="modal-message">${message}</div>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="modal-cancel-btn">${cancelLabel || L.cancel_label || 'Cancel'}</button>
+        <button class="modal-btn modal-btn-danger" id="modal-confirm-btn">${confirmLabel}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('modal-show'));
+  const close = () => {
+    overlay.classList.remove('modal-show');
+    setTimeout(() => overlay.remove(), 180);
+  };
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  overlay.querySelector('#modal-cancel-btn').onclick = close;
+  overlay.querySelector('#modal-confirm-btn').onclick = () => { close(); onConfirm(); };
+}
+
+// ── Install ────────────────────────────────
+window.handleInstall = async function() {
+  if (!mmInstallPrompt) return;
+  mmInstallPrompt.prompt();
+  const { outcome } = await mmInstallPrompt.userChoice;
+  if (outcome === 'accepted') {
+    mmInstallPrompt = null;
+    const btn = document.getElementById('mm-install-btn');
+    if (btn) btn.style.display = 'none';
+  }
+};
+
+window.handleInstallIOS = function() {
+  const modal = document.getElementById('mm-ios-modal');
+  if (modal) modal.style.display = 'flex';
+};
+
+// ── Backup / restore ───────────────────────
+// Everything lives only in this browser's localStorage — clearing site
+// data/cache wipes it with no way back. This lets someone save a copy of
+// it as a plain file they control, still never touching a server.
+const BACKUP_KEYS = ['mamaminds-state', 'mamaminds-theme', 'mamaminds-onboarded', 'mamaminds-visited', 'mamaminds-profile-done', 'mamaminds-last-checkin'];
+
+window.exportData = function() {
+  const backup = {
+    app: 'mama-minds-backup',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data: {},
+  };
+  for (const key of BACKUP_KEYS) {
+    const val = localStorage.getItem(key);
+    if (val !== null) backup.data[key] = val;
+  }
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `mama-minds-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast(state.L.export_success_toast, 'success');
+};
+
+window.triggerImportData = function() {
+  const input = document.getElementById('import-file-input');
+  if (input) input.click();
+};
+
+window.handleImportFile = function(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const backup = JSON.parse(reader.result);
+      if (!backup || backup.app !== 'mama-minds-backup' || typeof backup.data !== 'object') {
+        showToast(state.L.import_invalid_toast, 'danger');
+        return;
+      }
+      for (const key of BACKUP_KEYS) {
+        if (backup.data[key] !== undefined) localStorage.setItem(key, backup.data[key]);
+      }
+      showToast(state.L.import_success_toast, 'success');
+      setTimeout(() => location.reload(), 1400);
+    } catch (e) {
+      showToast(state.L.import_invalid_toast, 'danger');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+};
+
 // ── Profile ────────────────────────────────
 window.handleUpgrade = function() {
-  alert('Mama Minds Plus — Upgrade coming soon!\n\nR89/month · R799/year\n\nFeatures: Unlimited assessments, tele-health booking, therapist chat, care plan export, priority alerts.');
+  showToast(state.L.upgrade_toast, 'default');
 };
 
 window.confirmDeleteData = function() {
-  if (confirm('Are you sure you want to delete all your data? This cannot be undone.')) {
-    localStorage.clear();
-    location.reload();
-  }
+  const L = state.L;
+  showConfirmModal({
+    title: L.delete_confirm_title,
+    message: L.delete_confirm_message,
+    confirmLabel: L.delete_confirm_btn,
+    onConfirm: () => {
+      showToast(L.data_deleted_toast, 'success');
+      localStorage.clear();
+      setTimeout(() => location.reload(), 1400);
+    }
+  });
 };
 
 // ── Helpers ────────────────────────────────
