@@ -30,7 +30,14 @@
 
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/svg+xml" href="./icon.svg">
-  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <!-- iOS Safari doesn't fully trust manifest.json's display:standalone on
+       its own — these are needed for "Add to Home Screen" to actually open
+       full-screen there too, without them it still opens inside Safari. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Mama Minds">
+  <meta name="theme-color" content="#8B4513">
   <style>
     /* Inlined so the preloader paints before main.css finishes loading.
        The illustration's own backdrop is baked into its PNG (sampled at
@@ -43,8 +50,8 @@
     }
     #preloader img { width: 240px; height: 240px; }
   </style>
-  <script type="module" crossorigin src="./assets/index-CAjf3AbQ.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-BWn1GMvz.css">
+  <script type="module" crossorigin src="./assets/index-BB7fB0sq.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-ClPEdoZd.css">
 </head>
 <body>
   <div id="root">
