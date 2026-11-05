@@ -336,7 +336,8 @@ export const RESOURCES = {
           <strong>Things that help me:</strong> _______________________<br>
           <strong>Concerns I want to discuss today:</strong> _______________________
         </div>
-        <div class="info-box">You can screenshot this page or share it directly from the Mama Minds app (Plus plan) to send to your health worker before your visit.</div>
+        <button type="button" class="action-btn" style="margin-bottom:12px" onclick="downloadCarePlan()">📥 Download care plan</button>
+        <div class="info-box">Downloads as a text file you can fill in, save, print, or send to your health worker before your visit. Your name and latest EPDS score (if you've taken the assessment) are filled in automatically — nothing is uploaded anywhere.</div>
         <h4>Medication safety for breastfeeding mothers</h4>
         <p>If your doctor prescribes antidepressants, know that certain medications (like sertraline and paroxetine) have been found safe for breastfeeding. Always confirm with your doctor. Do not stop medication without consulting your health provider first.</p>
       `

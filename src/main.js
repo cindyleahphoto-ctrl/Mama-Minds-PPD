@@ -1624,6 +1624,36 @@ window.handleInstallIOS = function() {
   if (modal) modal.style.display = 'flex';
 };
 
+// ── File downloads ─────────────────────────
+function downloadTextFile(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+window.downloadCarePlan = function() {
+  const score = getLatestScore();
+  const lines = [
+    'Mama Minds — Care plan for my health worker',
+    `Generated: ${new Date().toLocaleDateString()}`,
+    '',
+    `My name: ${state.userName || '_______________________'}`,
+    "Baby's date of birth: _______________________",
+    `My EPDS score (from Mama Minds app): ${score !== null ? `${score} — ${getScoreLabel(score)}` : '_______________________'}`,
+    'Main symptoms I experience: _______________________',
+    'Support I have at home: _______________________',
+    'Things that help me: _______________________',
+    'Concerns I want to discuss today: _______________________',
+  ];
+  downloadTextFile(`mama-minds-care-plan-${new Date().toISOString().slice(0, 10)}.txt`, lines.join('\n'), 'text/plain');
+};
+
 // ── Backup / restore ───────────────────────
 // Everything lives only in this browser's localStorage — clearing site
 // data/cache wipes it with no way back. This lets someone save a copy of
@@ -1641,15 +1671,7 @@ window.exportData = function() {
     const val = localStorage.getItem(key);
     if (val !== null) backup.data[key] = val;
   }
-  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `mama-minds-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  downloadTextFile(`mama-minds-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(backup, null, 2), 'application/json');
   showToast(state.L.export_success_toast, 'success');
 };
 
