@@ -37,7 +37,14 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Mama Minds">
-  <meta name="theme-color" content="#8B4513">
+  <meta name="theme-color" content="#8B4513">
+  <!-- DM Sans / Lora have been referenced throughout main.css since early
+       in the project but were never actually linked anywhere — the whole
+       app has been silently rendering in system fallback fonts. Baloo 2 is
+       the new rounded "bubble letter" display font for the wordmark. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Lora:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
     /* Inlined so the preloader paints before main.css finishes loading.
        The illustration's own backdrop is baked into its PNG (sampled at
@@ -50,8 +57,8 @@
     }
     #preloader img { width: 240px; height: 240px; }
   </style>
-  <script type="module" crossorigin src="./assets/index-BB7fB0sq.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-ClPEdoZd.css">
+  <script type="module" crossorigin src="./assets/index-BwNJstKD.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DmiYuv8h.css">
 </head>
 <body>
   <div id="root">
