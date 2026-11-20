@@ -122,11 +122,44 @@ html, body {
 #app {
   max-width: 430px;
   margin: 0 auto;
-  min-height: 100vh;
+  /* A hard height (not min-height) is what makes the .scroll-body inside
+     each screen actually clip and scroll internally instead of letting
+     the whole screen grow past one viewport — without it, a tall screen
+     (e.g. a long EPDS question) just pushes its fixed nav-actions/
+     bottom-nav bar below the fold, forcing the whole page to scroll to
+     reach it. 100dvh accounts for mobile Chrome/Safari's address bar
+     show/hide, where plain 100vh is sized to the state without it and
+     clips content when the bar is showing; 100vh stays first as a
+     fallback for browsers that don't support dvh. */
+  height: 100vh;
+  height: 100dvh;
   background: var(--bg);
   position: relative;
   display: flex;
   flex-direction: column;
+}
+
+/* App-wide background "skin" — #app's background-image itself is set
+   inline via JS (applyAppBackground() in main.js), since it's a chosen
+   value, not something CSS alone can know. Opaque cards and headers
+   throughout the app already paint their own solid backgrounds, so the
+   skin only actually shows through the gaps between them — but plenty of
+   "floating" text (section labels, the community "coming soon" note, etc.)
+   sits directly in those gaps with no card behind it, already relying on
+   contrast against a plain light background. Rather than re-color every
+   such element one at a time as they turn up, this dims the texture itself
+   with a soft tint, so all of that existing text stays legible against it
+   without having to touch it. */
+[data-app-bg] .scroll-body {
+  background: linear-gradient(rgba(255,255,255,0.55), rgba(255,255,255,0.55));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"])[data-app-bg] .scroll-body {
+    background: linear-gradient(rgba(28,21,16,0.6), rgba(28,21,16,0.6));
+  }
+}
+[data-app-bg][data-theme="dark"] .scroll-body {
+  background: linear-gradient(rgba(28,21,16,0.6), rgba(28,21,16,0.6));
 }
 
 /* On tablet/desktop the mobile-width card would otherwise sit as a thin
@@ -139,12 +172,12 @@ html, body {
   body { padding: 24px 0; }
   #app {
     max-width: 600px;
-    min-height: calc(100vh - 48px);
+    height: calc(100vh - 48px);
+    height: calc(100dvh - 48px);
     border-radius: 20px;
     box-shadow: 0 16px 48px rgba(0,0,0,0.14);
     overflow: hidden;
   }
-  .screen { min-height: calc(100vh - 48px); }
 }
 @media (min-width: 1024px) {
   #app { max-width: 760px; }
@@ -155,14 +188,18 @@ html, body {
 .screen {
   display: none;
   flex-direction: column;
-  min-height: 100vh;
-  animation: fadeIn 0.2s ease;
+  height: 100%;
+  /* A longer, gentler glide-and-settle (quint ease-out: fast start, soft
+     landing) reads as noticeably smoother than a quick linear fade — the
+     kind of unhurried, deliberate motion polished app/game UIs use for
+     panel transitions, rather than an abrupt cut between screens. */
+  animation: screenEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .screen.active { display: flex; }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+@keyframes screenEnter {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .scroll-body {
@@ -176,7 +213,6 @@ html, body {
   background: var(--illustration-bg);
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
   padding: 0;
 }
 
@@ -224,14 +260,32 @@ html, body {
   cursor: pointer;
 }
 
-/* ── ONBOARDING: NAME + STAGE SCREENS ── */
-#screen-name,
-#screen-stage {
-  background: var(--terra-pale);
+/* ── ONBOARDING: NAME, BIRTHDAY, STAGE, MOOD SCREENS ── */
+/* A soft illustrated landscape anchored to the bottom of the screen — a
+   sun/moon, two rolling hills, and a few simple tree silhouettes in the
+   app's own terra/sage palette. Inspired by the layered gradient-and-scene
+   backgrounds of apps like Pocko, scaled down to a quiet, low-contrast
+   version that sits behind the onboarding card rather than competing with
+   it. The SVG is a literal string, so it can't use var() — light/dark need
+   two copies with colors baked in, same constraint as the other data-URI
+   assets in this file (see --illustration-bg above). */
+.onboard-screen {
+  background-color: var(--terra-pale);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 260' preserveAspectRatio='xMidYMax slice'%3E%3Ccircle cx='330' cy='55' r='34' fill='%23F4C77E' opacity='0.85'/%3E%3Cpath d='M0,160 Q70,120 160,145 T400,130 L400,260 L0,260 Z' fill='%23E8F2EB' opacity='0.9'/%3E%3Cpath d='M0,195 Q90,160 200,185 T400,175 L400,260 L0,260 Z' fill='%23BFDCC9' opacity='0.9'/%3E%3Cg fill='%238B4513' opacity='0.55'%3E%3Ccircle cx='55' cy='178' r='13'/%3E%3Crect x='52' y='188' width='6' height='16' rx='2'/%3E%3Ccircle cx='120' cy='188' r='10'/%3E%3Crect x='117' y='196' width='5' height='13' rx='2'/%3E%3Ccircle cx='270' cy='182' r='15'/%3E%3Crect x='266' y='194' width='7' height='18' rx='2'/%3E%3Ccircle cx='340' cy='190' r='11'/%3E%3Crect x='336' y='199' width='6' height='14' rx='2'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: bottom center;
+  background-size: 100% auto;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
   padding: 0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .onboard-screen {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 260' preserveAspectRatio='xMidYMax slice'%3E%3Ccircle cx='330' cy='55' r='28' fill='%23F0EBE4' opacity='0.5'/%3E%3Ccircle cx='60' cy='40' r='2' fill='%23F0EBE4' opacity='0.5'/%3E%3Ccircle cx='110' cy='70' r='1.6' fill='%23F0EBE4' opacity='0.4'/%3E%3Ccircle cx='200' cy='35' r='1.8' fill='%23F0EBE4' opacity='0.45'/%3E%3Ccircle cx='250' cy='90' r='1.4' fill='%23F0EBE4' opacity='0.35'/%3E%3Cpath d='M0,160 Q70,120 160,145 T400,130 L400,260 L0,260 Z' fill='%232e1f14' opacity='0.9'/%3E%3Cpath d='M0,195 Q90,160 200,185 T400,175 L400,260 L0,260 Z' fill='%23241a12' opacity='0.95'/%3E%3Cg fill='%23C68642' opacity='0.45'%3E%3Ccircle cx='55' cy='178' r='13'/%3E%3Crect x='52' y='188' width='6' height='16' rx='2'/%3E%3Ccircle cx='120' cy='188' r='10'/%3E%3Crect x='117' y='196' width='5' height='13' rx='2'/%3E%3Ccircle cx='270' cy='182' r='15'/%3E%3Crect x='266' y='194' width='7' height='18' rx='2'/%3E%3Ccircle cx='340' cy='190' r='11'/%3E%3Crect x='336' y='199' width='6' height='14' rx='2'/%3E%3C/g%3E%3C/svg%3E");
+  }
+}
+:root[data-theme="dark"] .onboard-screen {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 260' preserveAspectRatio='xMidYMax slice'%3E%3Ccircle cx='330' cy='55' r='28' fill='%23F0EBE4' opacity='0.5'/%3E%3Ccircle cx='60' cy='40' r='2' fill='%23F0EBE4' opacity='0.5'/%3E%3Ccircle cx='110' cy='70' r='1.6' fill='%23F0EBE4' opacity='0.4'/%3E%3Ccircle cx='200' cy='35' r='1.8' fill='%23F0EBE4' opacity='0.45'/%3E%3Ccircle cx='250' cy='90' r='1.4' fill='%23F0EBE4' opacity='0.35'/%3E%3Cpath d='M0,160 Q70,120 160,145 T400,130 L400,260 L0,260 Z' fill='%232e1f14' opacity='0.9'/%3E%3Cpath d='M0,195 Q90,160 200,185 T400,175 L400,260 L0,260 Z' fill='%23241a12' opacity='0.95'/%3E%3Cg fill='%23C68642' opacity='0.45'%3E%3Ccircle cx='55' cy='178' r='13'/%3E%3Crect x='52' y='188' width='6' height='16' rx='2'/%3E%3Ccircle cx='120' cy='188' r='10'/%3E%3Crect x='117' y='196' width='5' height='13' rx='2'/%3E%3Ccircle cx='270' cy='182' r='15'/%3E%3Crect x='266' y='194' width='7' height='18' rx='2'/%3E%3Ccircle cx='340' cy='190' r='11'/%3E%3Crect x='336' y='199' width='6' height='14' rx='2'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .onboard-wrap {
@@ -271,6 +325,14 @@ html, body {
   color: var(--terra-text);
   font-weight: 500;
   white-space: nowrap;
+}
+
+.onboard-greeting-line {
+  font-size: 14px;
+  color: var(--terra-text);
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 4px;
 }
 
 .onboard-title {
@@ -407,13 +469,12 @@ html, body {
   align-items: center;
   justify-content: center;
   padding: 40px 24px;
-  min-height: 100vh;
 }
 
 .lang-logo {
-  font-family: 'Lora', serif;
-  font-size: 32px;
-  font-weight: 600;
+  font-family: 'Baloo 2', 'Lora', serif;
+  font-size: 34px;
+  font-weight: 700;
   color: #fff;
   text-align: center;
   margin-bottom: 6px;
@@ -913,6 +974,33 @@ html, body {
   border-bottom: 0.5px solid var(--border);
 }
 
+.community-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 20px 4px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+}
+.community-search-input {
+  flex: 1;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text-main);
+}
+.community-search-input:focus { outline: none; }
+.community-search-input::placeholder { color: var(--text-muted); }
+.community-no-results {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 32px 20px;
+}
+
 .community-threads {
   padding: 16px 16px 8px;
   display: flex;
@@ -1079,6 +1167,16 @@ html, body {
 }
 .article-header:hover { background: var(--bg-soft); }
 .article-title { font-size: 13px; font-weight: 500; line-height: 1.4; flex: 1; }
+.article-tab-tag {
+  font-size: 10px;
+  color: var(--terra-text);
+  background: var(--terra-pale);
+  padding: 3px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
 .article-body {
   padding: 14px;
   font-size: 13px;
@@ -1372,6 +1470,66 @@ html, body {
 }
 .profile-label { font-size: 13px; }
 .profile-value { font-size: 12px; color: var(--text-muted); }
+.profile-edit-input {
+  border: none;
+  background: none;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  padding: 2px 0;
+  max-width: 160px;
+}
+.profile-edit-input:focus {
+  outline: none;
+  border-bottom: 1px solid var(--terra);
+  color: var(--text-main);
+}
+.profile-edit-input::placeholder { color: var(--text-muted); opacity: 0.6; }
+.profile-edit-input-narrow { max-width: 60px; }
+.profile-row-stacked { display: block; }
+.profile-row-stacked-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.profile-birthday-wrap { display: flex; align-items: center; gap: 8px; }
+.profile-birthday-wrap .profile-edit-input { max-width: 130px; }
+.profile-age-hint { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+.baby-stage-card {
+  background: var(--sage-pale);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.baby-stage-card p { font-size: 13px; color: var(--sage-on-pale); line-height: 1.5; margin: 0; }
+.baby-stage-card .text-link { white-space: nowrap; }
+
+.bg-swatch-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.bg-swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 0;
+}
+.bg-swatch.selected { border-color: var(--terra); box-shadow: 0 0 0 2px var(--terra-pale); }
+/* Hide number input spinners so the age field matches the other plain-text rows */
+.profile-edit-input[type="number"]::-webkit-outer-spin-button,
+.profile-edit-input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.profile-edit-input[type="number"] { -moz-appearance: textfield; }
 .plan-badge {
   background: var(--gold-pale);
   color: var(--gold-on-pale);
