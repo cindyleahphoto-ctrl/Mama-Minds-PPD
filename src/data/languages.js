@@ -137,7 +137,9 @@ export const LANGUAGES = {
     change_label: 'Change',
     background_label: 'Background',
     resources_search_placeholder: 'Search resources...',
-    resources_no_results: 'No resources found for that search.'
+    resources_no_results: 'No resources found for that search.',
+    onboard_birthday_question: 'When is your birthday?',
+    onboard_birthday_required_hint: 'Please add a date, or tap Skip.'
   },
 
   zu: {
@@ -272,7 +274,9 @@ export const LANGUAGES = {
     change_label: 'Shintsha',
     background_label: 'Isizinda',
     resources_search_placeholder: 'Sesha izinsiza...',
-    resources_no_results: 'Azikho izinsiza ezitholakele kuloluhlobo lokusesha.'
+    resources_no_results: 'Azikho izinsiza ezitholakele kuloluhlobo lokusesha.',
+    onboard_birthday_question: 'Ubelethwe nini?',
+    onboard_birthday_required_hint: 'Sicela ufake usuku, noma uthepha u-Yeqa.'
   },
 
   xh: {
@@ -407,7 +411,9 @@ export const LANGUAGES = {
     change_label: 'Tshintsha',
     background_label: 'Umva',
     resources_search_placeholder: 'Khangela izixhobo...',
-    resources_no_results: 'Azikho izinto zifunyenwe kolu khangelo.'
+    resources_no_results: 'Azikho izinto zifunyenwe kolu khangelo.',
+    onboard_birthday_question: 'Wazalwa nini?',
+    onboard_birthday_required_hint: 'Nceda ufake umhla, okanye ucofe u-Tsiba.'
   },
 
   af: {
@@ -542,7 +548,9 @@ export const LANGUAGES = {
     change_label: 'Verander',
     background_label: 'Agtergrond',
     resources_search_placeholder: 'Deursoek hulpbronne...',
-    resources_no_results: 'Geen hulpbronne gevind vir daardie soektog nie.'
+    resources_no_results: 'Geen hulpbronne gevind vir daardie soektog nie.',
+    onboard_birthday_question: 'Wanneer is jou verjaarsdag?',
+    onboard_birthday_required_hint: 'Voeg asseblief \'n datum by, of tik Slaan oor.'
   },
 
   st: {
@@ -677,7 +685,9 @@ export const LANGUAGES = {
     change_label: 'Fetola',
     background_label: 'Bokamorao',
     resources_search_placeholder: 'Batla lisebelisoa...',
-    resources_no_results: 'Ha ho na lisebelisoa tse fumanehileng bakeng sa patlisiso eo.'
+    resources_no_results: 'Ha ho na lisebelisoa tse fumanehileng bakeng sa patlisiso eo.',
+    onboard_birthday_question: 'Letsatsi la hau la tswalo ke neng?',
+    onboard_birthday_required_hint: 'Ka kopo kenya letsatsi, kapa u tobetse Tlola.'
   },
 
   tn: {
@@ -812,7 +822,9 @@ export const LANGUAGES = {
     change_label: 'Fetola',
     background_label: 'Bokamorago',
     resources_search_placeholder: 'Batla didirisiwa...',
-    resources_no_results: 'Ga go na didirisiwa tse di fitlhetsweng mo patlisisong eo.'
+    resources_no_results: 'Ga go na didirisiwa tse di fitlhetsweng mo patlisisong eo.',
+    onboard_birthday_question: 'Letsatsi la gago la matsalo ke leng?',
+    onboard_birthday_required_hint: 'Tsweetswee tsenya letlha, kgotsa o tobetse Tlola.'
   },
 
   nso: {
@@ -947,7 +959,9 @@ export const LANGUAGES = {
     change_label: 'Fetola',
     background_label: 'Bokamorago',
     resources_search_placeholder: 'Nyakišiša didirišwa...',
-    resources_no_results: 'Ga go didirišwa tšeo di hwetšwego bakeng sa tsenyo yeo.'
+    resources_no_results: 'Ga go didirišwa tšeo di hwetšwego bakeng sa tsenyo yeo.',
+    onboard_birthday_question: 'Letšatši la gago la matswalo ke neng?',
+    onboard_birthday_required_hint: 'Hle tsenya letšatši, goba o kgotle Tlola.'
   },
 
   ts: {
@@ -1082,7 +1096,9 @@ export const LANGUAGES = {
     change_label: 'Cinca',
     background_label: 'Endzhaku',
     resources_search_placeholder: 'Lavisisa switirho...',
-    resources_no_results: 'A ku na switirho leswi kumekeke eka ndzavisiso wolowo.'
+    resources_no_results: 'A ku na switirho leswi kumekeke eka ndzavisiso wolowo.',
+    onboard_birthday_question: 'Siku ra wena ro velekiwa i rihi?',
+    onboard_birthday_required_hint: 'Kombela u nghenisa siku, kumbe u khome Tlula.'
   },
 
   ve: {
@@ -1217,7 +1233,9 @@ export const LANGUAGES = {
     change_label: 'Shandula',
     background_label: 'Murahu',
     resources_search_placeholder: 'Ṱoḓa zwishumiswa...',
-    resources_no_results: 'A hu na zwishumiswa zwo wanalaho kha u ṱoḓa uhu.'
+    resources_no_results: 'A hu na zwishumiswa zwo wanalaho kha u ṱoḓa uhu.',
+    onboard_birthday_question: 'Ḓuvha ḽaṋu ḽa u bebwa ndi lifhio?',
+    onboard_birthday_required_hint: 'Ni khou humbelwa u ḓadza ḓuvha, kana ni kwate Pfukelani.'
   },
 
   ss: {
@@ -1352,7 +1370,9 @@ export const LANGUAGES = {
     change_label: 'Shintja',
     background_label: 'Emuva',
     resources_search_placeholder: 'Sesha ticinisetfo...',
-    resources_no_results: 'Akukho ticinisetfo letitfolakele kulesi sisesho.'
+    resources_no_results: 'Akukho ticinisetfo letitfolakele kulesi sisesho.',
+    onboard_birthday_question: 'Lilanga lakho lekutalwa ngutsite?',
+    onboard_birthday_required_hint: 'Sicela ufake lilanga, nobe ucindzete Yeca.'
   },
 
   nr: {
@@ -1487,7 +1507,9 @@ export const LANGUAGES = {
     change_label: 'Tjhugulula',
     background_label: 'Emuva',
     resources_search_placeholder: 'Funa izinto...',
-    resources_no_results: 'Akukho izinto ezifunyanwe kilokhu kuzuma.'
+    resources_no_results: 'Akukho izinto ezifunyanwe kilokhu kuzuma.',
+    onboard_birthday_question: 'Ilanga lakho lokubelethwa ngilaphi?',
+    onboard_birthday_required_hint: 'Sicela ufake ilanga, namkha uthepha u-Tjhinga.'
   },
 
   sw: {
@@ -1623,7 +1645,9 @@ export const LANGUAGES = {
     change_label: 'Badilisha',
     background_label: 'Mandharinyuma',
     resources_search_placeholder: 'Tafuta rasilimali...',
-    resources_no_results: 'Hakuna rasilimali zilizopatikana kwa utafutaji huo.'
+    resources_no_results: 'Hakuna rasilimali zilizopatikana kwa utafutaji huo.',
+    onboard_birthday_question: 'Siku lako la kuzaliwa ni lini?',
+    onboard_birthday_required_hint: 'Tafadhali ongeza tarehe, au gusa Ruka.'
   }
 };
 

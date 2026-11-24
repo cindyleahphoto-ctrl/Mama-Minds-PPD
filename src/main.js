@@ -60,13 +60,14 @@ let state = {
 // rather than a fixed image: light mode gets the cream corner wallpaper,
 // dark mode keeps the rust texture that was already the look there — every
 // other entry is a single fixed choice regardless of theme. 'tile: true'
-// entries are seamless repeating swatches (sized down via tileSize so the
-// pattern repeats at a sensible density instead of one giant motif filling
-// the screen); everything else is a single image stretched to cover.
-// Legibility for text sitting directly on any of these (not inside its own
-// card) comes from the [data-app-bg] .scroll-body tint overlay in the CSS,
-// not from per-image color choices — so new entries don't need anything
-// beyond an image path to stay readable in both themes.
+// entries are a single image scaled to cover the screen exactly, no
+// tiling — these particular source images weren't prepared as perfectly
+// seamless repeat tiles, so forcing a CSS repeat on them cut shapes off at
+// the tile boundary instead of fitting the screen cleanly. Legibility for
+// text sitting directly on any of these (not inside its own card) comes
+// from the [data-app-bg] .scroll-body tint overlay in the CSS, not from
+// per-image color choices — so new entries don't need anything beyond an
+// image path to stay readable in both themes.
 const APP_BACKGROUNDS = {
   none: { label: 'Plain', image: null },
   default: {
@@ -76,10 +77,10 @@ const APP_BACKGROUNDS = {
   },
   'plain-rust': { label: 'Rust', image: './images/backgrounds/plain-rust.png' },
   'cream-corner-wallpaper': { label: 'Cream', image: './images/backgrounds/cream-corner-wallpaper.png' },
-  'sun-motif-pale': { label: 'Pale sun', image: './images/backgrounds/sun-motif-pale.jpg', tile: true, tileSize: '170px' },
-  'raffia-swirl': { label: 'Raffia', image: './images/backgrounds/raffia-swirl.jpg', tile: true, tileSize: '200px' },
-  'mudcloth-triangle-dash': { label: 'Mudcloth', image: './images/backgrounds/mudcloth-triangle-dash.jpg', tile: true, tileSize: '160px' },
-  'sun-motif-terracotta': { label: 'Terracotta sun', image: './images/backgrounds/sun-motif-terracotta.jpg', tile: true, tileSize: '220px' },
+  'sun-motif-pale': { label: 'Pale sun', image: './images/backgrounds/sun-motif-pale.jpg' },
+  'raffia-swirl': { label: 'Raffia', image: './images/backgrounds/raffia-swirl.jpg' },
+  'mudcloth-triangle-dash': { label: 'Mudcloth', image: './images/backgrounds/mudcloth-triangle-dash.jpg' },
+  'sun-motif-terracotta': { label: 'Terracotta sun', image: './images/backgrounds/sun-motif-terracotta.jpg' },
 };
 
 function applyAppBackground() {
@@ -89,15 +90,9 @@ function applyAppBackground() {
   if (imageToUse) {
     if (app) {
       app.style.backgroundImage = `url('${imageToUse}')`;
-      if (bg.tile) {
-        app.style.backgroundSize = bg.tileSize || '180px';
-        app.style.backgroundPosition = 'top left';
-        app.style.backgroundRepeat = 'repeat';
-      } else {
-        app.style.backgroundSize = 'cover';
-        app.style.backgroundPosition = 'center';
-        app.style.backgroundRepeat = 'no-repeat';
-      }
+      app.style.backgroundSize = 'cover';
+      app.style.backgroundPosition = 'center';
+      app.style.backgroundRepeat = 'no-repeat';
     }
     document.documentElement.setAttribute('data-app-bg', state.appBackground);
   } else {
@@ -330,7 +325,8 @@ function buildBirthdayScreen() {
       </div>
       <span class="onboard-step-label">2 of 4</span>
     </div>
-    <h2 class="onboard-title" id="birthday-greeting">${(L.onboard_nice_to_meet || '').replace('{name}', escapeHtml(state.userName))}</h2>
+    <p class="onboard-greeting-line" id="birthday-greeting">${(L.onboard_nice_to_meet || '').replace('{name}', escapeHtml(state.userName))}</p>
+    <h2 class="onboard-title">${L.onboard_birthday_question}</h2>
     <p class="onboard-sub">${L.onboard_birthday_sub}</p>
     <input
       type="date"
@@ -338,6 +334,7 @@ function buildBirthdayScreen() {
       class="onboard-input"
       value="${state.userBirthday || ''}"
       max="${new Date().toISOString().slice(0, 10)}">
+    <p class="onboard-field-hint" id="birthday-hint"></p>
     <button class="action-btn onboard-cta" onclick="submitBirthday()">${L.btn_continue}</button>
     <button class="onboard-skip" onclick="skipBirthday()">${L.onboard_skip}</button>
   </div>
@@ -425,7 +422,18 @@ function getStageResponseText(range, name) {
 }
 
 // ── Onboarding handlers ────────────────────
+// Letters (any script — names in any of the app's 12 languages need to
+// work, not just ASCII), spaces, hyphens, and apostrophes only. Stripped
+// live as it's typed so special characters, digits, and anything
+// code/markup-like never actually land in the field, rather than being
+// accepted and only caught on submit.
+function sanitizeNameInput(value) {
+  return value.replace(/[^\p{L}\s'-]/gu, '');
+}
+
 window.updateNameCounter = function(input) {
+  const sanitized = sanitizeNameInput(input.value);
+  if (sanitized !== input.value) input.value = sanitized;
   const counter = document.getElementById('name-char-count');
   if (!counter) return;
   const len = input.value.length;
@@ -434,7 +442,7 @@ window.updateNameCounter = function(input) {
 
 window.submitName = function() {
   const input = document.getElementById('name-input');
-  const val = input ? input.value.trim() : '';
+  const val = input ? sanitizeNameInput(input.value).trim() : '';
   if (val) {
     state.userName = val;
     saveState();
@@ -462,7 +470,20 @@ window.skipName = function() {
 
 window.submitBirthday = function() {
   const input = document.getElementById('birthday-input');
-  state.userBirthday = (input && input.value) || null;
+  const val = input && input.value;
+  // Continue confirms an answer; Skip is the only path past this screen
+  // with no birthday set — before, both buttons did the same thing when
+  // the field was empty, so Continue silently behaved like Skip.
+  if (!val) {
+    if (input) {
+      input.classList.add('input-error');
+      setTimeout(() => input.classList.remove('input-error'), 1500);
+    }
+    const hint = document.getElementById('birthday-hint');
+    if (hint) hint.textContent = state.L.onboard_birthday_required_hint;
+    return;
+  }
+  state.userBirthday = val;
   saveState();
   showScreen('screen-stage');
 };
@@ -535,7 +556,6 @@ function getTodaysMoodIndex() {
 function buildHomeScreen() {
   const L = state.L;
   const daysSince = getDaysSinceLastCheckin();
-  const recentScores = state.scoreHistory.slice(-3).reverse(); // newest first, up to 3
   const todaysMood = getTodaysMoodIndex();
 
   return `
@@ -627,6 +647,23 @@ function buildHomeScreen() {
       </div>
     </div>` : ''}
 
+    <div id="home-score-section">${buildHomeScoreSectionInner()}</div>
+    <div style="height:16px"></div>
+  </div>
+
+  ${buildBottomNav(0)}
+</div>`;
+}
+
+// Pulled out of buildHomeScreen() so it can be regenerated on its own —
+// the Home screen's own HTML is normally only (re)built on a full
+// renderApp(), but a fresh EPDS result needs to show up the moment you
+// navigate back to Home via showScreen(), not just on the next reload.
+// See refreshHomeScoreSection(), called right after a new score is saved.
+function buildHomeScoreSectionInner() {
+  const L = state.L;
+  const recentScores = state.scoreHistory.slice(-3).reverse(); // newest first, up to 3
+  return `
     <div class="section-label">${L.progress_label}</div>
     ${recentScores.length ? `
     <div class="score-cards-row">${recentScores.map(buildScoreCard).join('')}</div>` : `
@@ -634,12 +671,41 @@ function buildHomeScreen() {
       <div class="score-row"><span class="text-muted text-small">${L.last_score}</span><span class="text-muted" style="font-size:12px">—</span></div>
       <div class="score-bar"><div class="score-fill" style="width:0%"></div></div>
       <div class="score-ticks"><span class="text-muted" style="font-size:10px">0</span><span class="text-muted" style="font-size:10px">30</span></div>
-    </div>`}
-    <div style="height:16px"></div>
-  </div>
+    </div>`}`;
+}
 
-  ${buildBottomNav(0)}
-</div>`;
+function refreshHomeScoreSection() {
+  const el = document.getElementById('home-score-section');
+  if (el) el.innerHTML = buildHomeScoreSectionInner();
+}
+
+// Same staleness problem as the Home score section, for Profile's history
+// list — refreshed together in refreshAllScoreSections() below.
+function buildProfileScoreSectionInner() {
+  const L = state.L;
+  const recentEntries = state.scoreHistory.slice(-3).reverse(); // newest first, max 3, no padding
+  if (!recentEntries.length) return '';
+  const historyHTML = recentEntries.map(e => {
+    const cat = getScoreCategory(e.score);
+    return `
+      <div class="history-row">
+        <span class="history-dot history-dot-${cat}"></span>
+        <span class="history-date">${formatHistoryDate(e.date)}</span>
+        <span class="history-score">${e.score}/30</span>
+        <span class="history-category">${(L.result_categories || {})[cat] || cat}</span>
+      </div>`;
+  }).join('');
+  return `
+    <div class="mt-16">
+      <div class="section-label">${L.progress_label}</div>
+      ${historyHTML}
+    </div>`;
+}
+
+function refreshAllScoreSections() {
+  refreshHomeScoreSection();
+  const el = document.getElementById('profile-score-section');
+  if (el) el.innerHTML = buildProfileScoreSectionInner();
 }
 
 function buildScoreCard(entry) {
@@ -1101,26 +1167,75 @@ const DEFAULT_CONTACTS = [
 ];
 const NEW_CONTACT_AVATAR_CLASSES = ['av-green', 'av-gold', 'av-rose', 'av-blue'];
 
-// Dial codes for the app's core audience: South Africa plus its
-// neighbours and the countries covered by the app's other languages
-// (Kiswahili -> Kenya/Tanzania). Not exhaustive by design — a plain +xx
-// text entry would work for any country, this list just makes the common
-// cases a one-tap pick instead of a lookup.
+// South Africa is pinned first (the app's default), everything else is
+// alphabetised by country name — and the label starts with the name, not
+// the flag, specifically so a plain <select>'s native typeahead works:
+// browsers jump to the first option whose visible text starts with
+// whatever you type, so "Ke" now actually jumps to Kenya. That's the
+// "look up a typed country code" ability without needing a custom
+// searchable widget. Covers all of Africa plus the other countries most
+// likely to come up (the UK/US/Canada are the SA diaspora's commonest
+// destinations), rather than every country on Earth.
 const COUNTRY_CODES = [
-  { code: '+27', label: '🇿🇦 +27 South Africa' },
-  { code: '+266', label: '🇱🇸 +266 Lesotho' },
-  { code: '+268', label: '🇸🇿 +268 Eswatini' },
-  { code: '+264', label: '🇳🇦 +264 Namibia' },
-  { code: '+267', label: '🇧🇼 +267 Botswana' },
-  { code: '+263', label: '🇿🇼 +263 Zimbabwe' },
-  { code: '+258', label: '🇲🇿 +258 Mozambique' },
-  { code: '+254', label: '🇰🇪 +254 Kenya' },
-  { code: '+255', label: '🇹🇿 +255 Tanzania' },
-  { code: '+256', label: '🇺🇬 +256 Uganda' },
-  { code: '+234', label: '🇳🇬 +234 Nigeria' },
-  { code: '+233', label: '🇬🇭 +233 Ghana' },
-  { code: '+44', label: '🇬🇧 +44 United Kingdom' },
-  { code: '+1', label: '🇺🇸 +1 US / Canada' },
+  { code: '+27', label: 'South Africa 🇿🇦 +27' },
+  { code: '+213', label: 'Algeria 🇩🇿 +213' },
+  { code: '+244', label: 'Angola 🇦🇴 +244' },
+  { code: '+229', label: 'Benin 🇧🇯 +229' },
+  { code: '+267', label: 'Botswana 🇧🇼 +267' },
+  { code: '+226', label: 'Burkina Faso 🇧🇫 +226' },
+  { code: '+257', label: 'Burundi 🇧🇮 +257' },
+  { code: '+238', label: 'Cabo Verde 🇨🇻 +238' },
+  { code: '+237', label: 'Cameroon 🇨🇲 +237' },
+  { code: '+1', label: 'Canada / US 🇨🇦 +1' },
+  { code: '+236', label: 'Central African Republic 🇨🇫 +236' },
+  { code: '+235', label: 'Chad 🇹🇩 +235' },
+  { code: '+269', label: 'Comoros 🇰🇲 +269' },
+  { code: '+242', label: 'Congo-Brazzaville 🇨🇬 +242' },
+  { code: '+243', label: 'Congo (DRC) 🇨🇩 +243' },
+  { code: '+225', label: "Côte d'Ivoire 🇨🇮 +225" },
+  { code: '+253', label: 'Djibouti 🇩🇯 +253' },
+  { code: '+20', label: 'Egypt 🇪🇬 +20' },
+  { code: '+240', label: 'Equatorial Guinea 🇬🇶 +240' },
+  { code: '+291', label: 'Eritrea 🇪🇷 +291' },
+  { code: '+268', label: 'Eswatini 🇸🇿 +268' },
+  { code: '+251', label: 'Ethiopia 🇪🇹 +251' },
+  { code: '+33', label: 'France 🇫🇷 +33' },
+  { code: '+241', label: 'Gabon 🇬🇦 +241' },
+  { code: '+220', label: 'Gambia 🇬🇲 +220' },
+  { code: '+49', label: 'Germany 🇩🇪 +49' },
+  { code: '+233', label: 'Ghana 🇬🇭 +233' },
+  { code: '+224', label: 'Guinea 🇬🇳 +224' },
+  { code: '+245', label: 'Guinea-Bissau 🇬🇼 +245' },
+  { code: '+91', label: 'India 🇮🇳 +91' },
+  { code: '+254', label: 'Kenya 🇰🇪 +254' },
+  { code: '+266', label: 'Lesotho 🇱🇸 +266' },
+  { code: '+231', label: 'Liberia 🇱🇷 +231' },
+  { code: '+218', label: 'Libya 🇱🇾 +218' },
+  { code: '+261', label: 'Madagascar 🇲🇬 +261' },
+  { code: '+265', label: 'Malawi 🇲🇼 +265' },
+  { code: '+223', label: 'Mali 🇲🇱 +223' },
+  { code: '+222', label: 'Mauritania 🇲🇷 +222' },
+  { code: '+230', label: 'Mauritius 🇲🇺 +230' },
+  { code: '+212', label: 'Morocco 🇲🇦 +212' },
+  { code: '+258', label: 'Mozambique 🇲🇿 +258' },
+  { code: '+264', label: 'Namibia 🇳🇦 +264' },
+  { code: '+227', label: 'Niger 🇳🇪 +227' },
+  { code: '+234', label: 'Nigeria 🇳🇬 +234' },
+  { code: '+250', label: 'Rwanda 🇷🇼 +250' },
+  { code: '+221', label: 'Senegal 🇸🇳 +221' },
+  { code: '+248', label: 'Seychelles 🇸🇨 +248' },
+  { code: '+232', label: 'Sierra Leone 🇸🇱 +232' },
+  { code: '+252', label: 'Somalia 🇸🇴 +252' },
+  { code: '+211', label: 'South Sudan 🇸🇸 +211' },
+  { code: '+34', label: 'Spain 🇪🇸 +34' },
+  { code: '+249', label: 'Sudan 🇸🇩 +249' },
+  { code: '+255', label: 'Tanzania 🇹🇿 +255' },
+  { code: '+228', label: 'Togo 🇹🇬 +228' },
+  { code: '+216', label: 'Tunisia 🇹🇳 +216' },
+  { code: '+256', label: 'Uganda 🇺🇬 +256' },
+  { code: '+44', label: 'United Kingdom 🇬🇧 +44' },
+  { code: '+260', label: 'Zambia 🇿🇲 +260' },
+  { code: '+263', label: 'Zimbabwe 🇿🇼 +263' },
 ];
 
 function buildCountryCodeOptions(selected) {
@@ -1166,12 +1281,12 @@ function buildContactCard(contact) {
   <div class="contact-info">
     <div class="contact-role">${role}</div>
     <input type="text" class="contact-name-input" placeholder="${L.hospital_name_placeholder || 'Nearest public hospital'}"
-      value="${escapeHtml(contact.name)}" oninput="updateContactName('${contact.id}', this.value)">
+      value="${escapeHtml(contact.name)}" oninput="updateContactName('${contact.id}', this)">
     <button type="button" class="locate-hospital-btn" onclick="locateNearestHospital()">${L.locate_hospital_btn || '📍 Find my nearest hospital'}</button>
     <div class="phone-row">
       <select class="country-code-select" aria-label="Country code" onchange="updateContactCountry('${contact.id}', this.value)">${buildCountryCodeOptions(contact.countryCode || '+27')}</select>
       <input type="tel" class="contact-phone-input" placeholder="${L.alert_phone_placeholder || 'Add phone number'}"
-        value="${escapeHtml(contact.phone)}" oninput="updateContactPhone('${contact.id}', this.value)">
+        value="${escapeHtml(contact.phone)}" oninput="updateContactPhone('${contact.id}', this)" inputmode="numeric">
     </div>
     <p class="hospital-note">${L.hospital_verify_note || "Please confirm this number yourself before relying on it — we can't guarantee it's current."}</p>
   </div>
@@ -1185,7 +1300,7 @@ function buildContactCard(contact) {
   <div class="contact-avatar ${contact.avatarClass}">${iconUser('#fff')}</div>
   <div class="contact-info">
     <input type="text" class="contact-name-input" placeholder="${L.alert_contact_name_placeholder || 'Contact name'}"
-      value="${escapeHtml(contact.name)}" oninput="updateContactName('${contact.id}', this.value)">
+      value="${escapeHtml(contact.name)}" oninput="updateContactName('${contact.id}', this)">
     <div class="channel-toggle">
       <button type="button" class="channel-btn ${contact.channel === 'whatsapp' ? 'active' : ''}" onclick="setContactChannel('${contact.id}','whatsapp', this)">WhatsApp</button>
       <button type="button" class="channel-btn ${contact.channel === 'sms' ? 'active' : ''}" onclick="setContactChannel('${contact.id}','sms', this)">SMS</button>
@@ -1193,7 +1308,7 @@ function buildContactCard(contact) {
     <div class="phone-row">
       <select class="country-code-select" aria-label="Country code" onchange="updateContactCountry('${contact.id}', this.value)">${buildCountryCodeOptions(contact.countryCode || '+27')}</select>
       <input type="tel" class="contact-phone-input" placeholder="${L.alert_phone_placeholder || 'Add phone number'}"
-        value="${escapeHtml(contact.phone)}" oninput="updateContactPhone('${contact.id}', this.value)">
+        value="${escapeHtml(contact.phone)}" oninput="updateContactPhone('${contact.id}', this)" inputmode="numeric">
     </div>
   </div>
   <div class="contact-actions">
@@ -1203,10 +1318,12 @@ function buildContactCard(contact) {
 </div>`;
 }
 
-window.updateContactPhone = function(id, value) {
+window.updateContactPhone = function(id, input) {
   const contact = getContacts().find(c => c.id === id);
   if (!contact) return;
-  contact.phone = value;
+  const sanitized = input.value.replace(/\D/g, ''); // digits only — country code comes from its own dropdown
+  if (sanitized !== input.value) input.value = sanitized;
+  contact.phone = sanitized;
   saveState();
 };
 
@@ -1217,10 +1334,21 @@ window.updateContactCountry = function(id, value) {
   saveState();
 };
 
-window.updateContactName = function(id, value) {
+// Lighter than sanitizeNameInput() — just strips code/markup delimiters.
+// Used for the hospital name field, which legitimately needs digits,
+// periods, apostrophes, and '&' ("St. Mary's Hospital 2"), unlike a
+// person's name.
+function sanitizeFreeTextInput(value) {
+  return value.replace(/[<>{}`]/g, '');
+}
+
+window.updateContactName = function(id, input) {
   const contact = getContacts().find(c => c.id === id);
   if (!contact) return;
-  contact.name = value;
+  const sanitize = contact.editable === 'hospital' ? sanitizeFreeTextInput : sanitizeNameInput;
+  const sanitized = sanitize(input.value);
+  if (sanitized !== input.value) input.value = sanitized;
+  contact.name = sanitized;
   saveState();
 };
 
@@ -1357,19 +1485,6 @@ function toWhatsAppNumber(phone, countryCode) {
 
 function buildProfileScreen() {
   const L = state.L;
-  const recentEntries = state.scoreHistory.slice(-3).reverse(); // newest first, max 3, no padding
-
-  const historyHTML = recentEntries.map(e => {
-    const cat = getScoreCategory(e.score);
-    return `
-      <div class="history-row">
-        <span class="history-dot history-dot-${cat}"></span>
-        <span class="history-date">${formatHistoryDate(e.date)}</span>
-        <span class="history-score">${e.score}/30</span>
-        <span class="history-category">${(L.result_categories || {})[cat] || cat}</span>
-      </div>`;
-  }).join('');
-
   return `
 <div class="screen" id="screen-profile">
   <div class="profile-header">
@@ -1389,7 +1504,7 @@ function buildProfileScreen() {
     <div class="profile-row">
       <span class="profile-label">${L.name_label}</span>
       <input type="text" class="profile-edit-input" value="${escapeHtml(state.userName)}"
-        oninput="updateUserName(this.value)" placeholder="${L.onboard_name_placeholder}">
+        oninput="updateUserName(this)" placeholder="${L.onboard_name_placeholder}">
     </div>
     <div class="profile-row">
       <span class="profile-label">${L.birthday_label}</span>
@@ -1439,11 +1554,7 @@ function buildProfileScreen() {
       </div>
     </div>` : ''}
 
-    ${recentEntries.length ? `
-    <div class="mt-16">
-      <div class="section-label">${L.progress_label}</div>
-      ${historyHTML}
-    </div>` : ''}
+    <div id="profile-score-section">${buildProfileScoreSectionInner()}</div>
 
     <div class="upgrade-box">
       <h3>${L.upgrade_title}</h3>
@@ -1822,6 +1933,7 @@ function showResults() {
     state.scoreHistory = state.scoreHistory.slice(-10);
   }
   saveState();
+  refreshAllScoreSections();
 
   const headerEl   = document.getElementById('result-header');
   const scoreEl    = document.getElementById('result-score');
@@ -2052,8 +2164,10 @@ window.handleImportFile = function(input) {
 };
 
 // ── Profile ────────────────────────────────
-window.updateUserName = function(value) {
-  state.userName = value.trim() || 'Mama';
+window.updateUserName = function(input) {
+  const sanitized = sanitizeNameInput(input.value);
+  if (sanitized !== input.value) input.value = sanitized;
+  state.userName = sanitized.trim() || 'Mama';
   saveState();
   const nameEl = document.getElementById('profile-name');
   if (nameEl) nameEl.textContent = state.userName;
