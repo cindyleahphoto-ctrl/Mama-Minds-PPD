@@ -45,12 +45,61 @@ let state = {
   answers: new Array(10).fill(null),
   moodHistory: [],
   userName: 'Mama',
-  postpartumRange: null, // '0-6w' | '6w-6m' | '6m-12m' | '1y+' | null (skipped)
+  userBirthday: null,     // ISO date string 'YYYY-MM-DD', optional — never required to use the app
+  userLocation: '',
+  postpartumRange: null, // '0-6w' | '6w-6m' | '6m-12m' | '1y+' | 'pregnant' | 'loss' | null (skipped)
   memberSince: null,     // ISO date string, set once when onboarding first completes
   scoreHistory: [],      // [{ score, date, postpartumRange }], newest last, capped at 10
   contacts: null,        // lazily initialised from DEFAULT_CONTACTS by getContacts()
   communityLikes: {},    // { 'post-0': true, 'reply-0-2': true, ... } — this device's likes only
+  appBackground: 'default', // id into APP_BACKGROUNDS — the chosen app-wide background skin
 };
+
+// Selectable app-wide background "skins". 'none' keeps the app exactly as
+// it always has been (var(--bg)), no image at all. 'default' is theme-aware
+// rather than a fixed image: light mode gets the cream corner wallpaper,
+// dark mode keeps the rust texture that was already the look there — every
+// other entry is a single fixed choice regardless of theme. 'tile: true'
+// entries are a single image scaled to cover the screen exactly, no
+// tiling — these particular source images weren't prepared as perfectly
+// seamless repeat tiles, so forcing a CSS repeat on them cut shapes off at
+// the tile boundary instead of fitting the screen cleanly. Legibility for
+// text sitting directly on any of these (not inside its own card) comes
+// from the [data-app-bg] .scroll-body tint overlay in the CSS, not from
+// per-image color choices — so new entries don't need anything beyond an
+// image path to stay readable in both themes.
+const APP_BACKGROUNDS = {
+  none: { label: 'Plain', image: null },
+  default: {
+    label: 'Default',
+    image: './images/backgrounds/cream-corner-wallpaper.png',
+    imageDark: './images/backgrounds/plain-rust.png',
+  },
+  'plain-rust': { label: 'Rust', image: './images/backgrounds/plain-rust.png' },
+  'cream-corner-wallpaper': { label: 'Cream', image: './images/backgrounds/cream-corner-wallpaper.png' },
+  'sun-motif-pale': { label: 'Pale sun', image: './images/backgrounds/sun-motif-pale.jpg' },
+  'raffia-swirl': { label: 'Raffia', image: './images/backgrounds/raffia-swirl.jpg' },
+  'mudcloth-triangle-dash': { label: 'Mudcloth', image: './images/backgrounds/mudcloth-triangle-dash.jpg' },
+  'sun-motif-terracotta': { label: 'Terracotta sun', image: './images/backgrounds/sun-motif-terracotta.jpg' },
+};
+
+function applyAppBackground() {
+  const bg = APP_BACKGROUNDS[state.appBackground] || APP_BACKGROUNDS.none;
+  const app = document.getElementById('app');
+  const imageToUse = (getEffectiveTheme() === 'dark' && bg.imageDark) ? bg.imageDark : bg.image;
+  if (imageToUse) {
+    if (app) {
+      app.style.backgroundImage = `url('${imageToUse}')`;
+      app.style.backgroundSize = 'cover';
+      app.style.backgroundPosition = 'center';
+      app.style.backgroundRepeat = 'no-repeat';
+    }
+    document.documentElement.setAttribute('data-app-bg', state.appBackground);
+  } else {
+    if (app) app.style.backgroundImage = '';
+    document.documentElement.removeAttribute('data-app-bg');
+  }
+}
 
 // ── Init ───────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -97,10 +146,13 @@ function saveState() {
       scoreHistory: state.scoreHistory,
       moodHistory: state.moodHistory,
       userName: state.userName,
+      userBirthday: state.userBirthday,
+      userLocation: state.userLocation,
       postpartumRange: state.postpartumRange,
       memberSince: state.memberSince,
       contacts: state.contacts,
       communityLikes: state.communityLikes,
+      appBackground: state.appBackground,
     };
     localStorage.setItem('mamaminds-state', JSON.stringify(toSave));
   } catch (e) {
@@ -138,6 +190,7 @@ window.toggleTheme = function() {
     btn.textContent = themeToggleIcon(next);
     btn.setAttribute('aria-label', next === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
   }
+  applyAppBackground(); // the 'default' skin swaps image by theme
 };
 
 // ── Render App ─────────────────────────────
@@ -145,6 +198,7 @@ function renderApp() {
   const root = document.getElementById('root');
   root.innerHTML = buildAppHTML();
   attachEventListeners();
+  applyAppBackground();
 
   // The install button starts hidden in the freshly-built markup — if the
   // browser already fired beforeinstallprompt earlier this session (it only
@@ -177,7 +231,10 @@ function buildAppHTML() {
   ${buildWelcomeScreen()}
   ${buildLangScreen()}
   ${buildNameScreen()}
+  ${buildBirthdayScreen()}
   ${buildStageScreen()}
+  ${buildStageResponseScreen()}
+  ${buildMoodOnboardScreen()}
   ${buildHomeScreen()}
   ${buildAssessScreen()}
   ${buildResultScreen()}
@@ -230,14 +287,15 @@ window.continueFromWelcome = function() {
 
 function buildNameScreen() {
   return `
-<div class="screen" id="screen-name">
+<div class="screen onboard-screen" id="screen-name">
   <div class="onboard-wrap">
     <div class="onboard-progress">
       <div class="onboard-progress-bar">
-        <div class="onboard-progress-fill" style="width:50%"></div>
+        <div class="onboard-progress-fill" style="width:25%"></div>
       </div>
-      <span class="onboard-step-label">1 of 2</span>
+      <span class="onboard-step-label">1 of 4</span>
     </div>
+    <p class="onboard-greeting-line">${state.L.onboard_welcome_greeting}</p>
     <h2 class="onboard-title">${state.L.onboard_name_title}</h2>
     <p class="onboard-sub">${state.L.onboard_name_sub}</p>
     <input
@@ -256,18 +314,45 @@ function buildNameScreen() {
 </div>`;
 }
 
+function buildBirthdayScreen() {
+  const L = state.L;
+  return `
+<div class="screen onboard-screen" id="screen-birthday">
+  <div class="onboard-wrap">
+    <div class="onboard-progress">
+      <div class="onboard-progress-bar">
+        <div class="onboard-progress-fill" style="width:50%"></div>
+      </div>
+      <span class="onboard-step-label">2 of 4</span>
+    </div>
+    <p class="onboard-greeting-line" id="birthday-greeting">${(L.onboard_nice_to_meet || '').replace('{name}', escapeHtml(state.userName))}</p>
+    <h2 class="onboard-title">${L.onboard_birthday_question}</h2>
+    <p class="onboard-sub">${L.onboard_birthday_sub}</p>
+    <input
+      type="date"
+      id="birthday-input"
+      class="onboard-input"
+      value="${state.userBirthday || ''}"
+      max="${new Date().toISOString().slice(0, 10)}">
+    <p class="onboard-field-hint" id="birthday-hint"></p>
+    <button class="action-btn onboard-cta" onclick="submitBirthday()">${L.btn_continue}</button>
+    <button class="onboard-skip" onclick="skipBirthday()">${L.onboard_skip}</button>
+  </div>
+</div>`;
+}
+
 function buildStageScreen() {
   const L = state.L;
   const rangeKeys = ['0-6w', '6w-6m', '6m-12m', '1y+'];
   const rangeLabels = L.onboard_stage_ranges || ['0–6 weeks', '6 weeks – 6 months', '6–12 months', 'Over a year'];
   return `
-<div class="screen" id="screen-stage">
+<div class="screen onboard-screen" id="screen-stage">
   <div class="onboard-wrap">
     <div class="onboard-progress">
       <div class="onboard-progress-bar">
-        <div class="onboard-progress-fill" style="width:100%"></div>
+        <div class="onboard-progress-fill" style="width:75%"></div>
       </div>
-      <span class="onboard-step-label">2 of 2</span>
+      <span class="onboard-step-label">3 of 4</span>
     </div>
     <h2 class="onboard-title">${L.onboard_stage_title}</h2>
     <p class="onboard-sub">${L.onboard_stage_sub}</p>
@@ -276,14 +361,79 @@ function buildStageScreen() {
         `<button class="range-btn ${state.postpartumRange === val ? 'selected' : ''}"
           onclick="selectPostpartumRange('${val}', this)">${rangeLabels[i]}</button>`
       ).join('')}
+      <button class="range-btn ${state.postpartumRange === 'pregnant' ? 'selected' : ''}"
+        onclick="selectPostpartumRange('pregnant', this)">${L.onboard_stage_pregnant}</button>
+      <button class="range-btn ${state.postpartumRange === 'loss' ? 'selected' : ''}"
+        onclick="selectPostpartumRange('loss', this)">${L.onboard_stage_loss}</button>
     </div>
     <button class="onboard-skip" onclick="skipStage()">${L.onboard_skip_step}</button>
   </div>
 </div>`;
 }
 
+function buildStageResponseScreen() {
+  return `
+<div class="screen onboard-screen" id="screen-stage-response">
+  <div class="onboard-wrap">
+    <h2 class="onboard-title" id="stage-response-text"></h2>
+    <button class="action-btn onboard-cta" onclick="showScreen('screen-mood-onboard')">${state.L.btn_continue}</button>
+  </div>
+</div>`;
+}
+
+function buildMoodOnboardScreen() {
+  const L = state.L;
+  return `
+<div class="screen onboard-screen" id="screen-mood-onboard">
+  <div class="onboard-wrap">
+    <div class="onboard-progress">
+      <div class="onboard-progress-bar">
+        <div class="onboard-progress-fill" style="width:100%"></div>
+      </div>
+      <span class="onboard-step-label">4 of 4</span>
+    </div>
+    <h2 class="onboard-title" id="mood-onboard-title">${(L.onboard_mood_title || '').replace('{name}', escapeHtml(state.userName))}</h2>
+    <div class="mood-row" style="margin-bottom:20px">
+      ${L.moods.map((m, i) => `
+        <button class="mood-btn" onclick="selectMoodOnboarding(this, ${i})">
+          <span class="mood-emoji">${['😔','😐','🙂','😊'][i]}</span>
+          <span>${m}</span>
+        </button>
+      `).join('')}
+    </div>
+    <button class="onboard-skip" onclick="skipMoodOnboarding()">${L.onboard_skip_step}</button>
+  </div>
+</div>`;
+}
+
+// Shared by the onboarding response screen and the Profile "About your
+// baby" section, so the two stay in sync automatically.
+function getStageResponseText(range, name) {
+  const L = state.L;
+  const rangeKeys = ['0-6w', '6w-6m', '6m-12m', '1y+'];
+  const rangeLabels = L.onboard_stage_ranges || ['0–6 weeks', '6 weeks – 6 months', '6–12 months', 'Over a year'];
+  const idx = rangeKeys.indexOf(range);
+  if (idx !== -1) {
+    return (L.onboard_response_postpartum || '').replace('{range}', rangeLabels[idx]);
+  }
+  if (range === 'pregnant') return L.onboard_response_pregnant;
+  if (range === 'loss') return L.onboard_response_loss;
+  return '';
+}
+
 // ── Onboarding handlers ────────────────────
+// Letters (any script — names in any of the app's 12 languages need to
+// work, not just ASCII), spaces, hyphens, and apostrophes only. Stripped
+// live as it's typed so special characters, digits, and anything
+// code/markup-like never actually land in the field, rather than being
+// accepted and only caught on submit.
+function sanitizeNameInput(value) {
+  return value.replace(/[^\p{L}\s'-]/gu, '');
+}
+
 window.updateNameCounter = function(input) {
+  const sanitized = sanitizeNameInput(input.value);
+  if (sanitized !== input.value) input.value = sanitized;
   const counter = document.getElementById('name-char-count');
   if (!counter) return;
   const len = input.value.length;
@@ -292,15 +442,53 @@ window.updateNameCounter = function(input) {
 
 window.submitName = function() {
   const input = document.getElementById('name-input');
-  const val = input ? input.value.trim() : '';
+  const val = input ? sanitizeNameInput(input.value).trim() : '';
   if (val) {
     state.userName = val;
     saveState();
   }
+  refreshOnboardingNamePlaceholders();
+  showScreen('screen-birthday');
+};
+
+// The birthday and mood onboarding screens' headings are built once at
+// initial page render (before a name has been entered, so they still show
+// the 'Mama' default baked in) — showScreen() only toggles visibility, it
+// doesn't rebuild them, so once a real name is submitted these need a
+// direct DOM update to pick it up rather than waiting for the next full render.
+function refreshOnboardingNamePlaceholders() {
+  const L = state.L;
+  const greeting = document.getElementById('birthday-greeting');
+  if (greeting) greeting.textContent = (L.onboard_nice_to_meet || '').replace('{name}', state.userName);
+  const moodTitle = document.getElementById('mood-onboard-title');
+  if (moodTitle) moodTitle.textContent = (L.onboard_mood_title || '').replace('{name}', state.userName);
+}
+
+window.skipName = function() {
+  showScreen('screen-birthday');
+};
+
+window.submitBirthday = function() {
+  const input = document.getElementById('birthday-input');
+  const val = input && input.value;
+  // Continue confirms an answer; Skip is the only path past this screen
+  // with no birthday set — before, both buttons did the same thing when
+  // the field was empty, so Continue silently behaved like Skip.
+  if (!val) {
+    if (input) {
+      input.classList.add('input-error');
+      setTimeout(() => input.classList.remove('input-error'), 1500);
+    }
+    const hint = document.getElementById('birthday-hint');
+    if (hint) hint.textContent = state.L.onboard_birthday_required_hint;
+    return;
+  }
+  state.userBirthday = val;
+  saveState();
   showScreen('screen-stage');
 };
 
-window.skipName = function() {
+window.skipBirthday = function() {
   showScreen('screen-stage');
 };
 
@@ -308,11 +496,26 @@ window.selectPostpartumRange = function(range, btn) {
   document.querySelectorAll('#screen-stage .range-btn').forEach(b => b.classList.remove('selected'));
   if (btn) btn.classList.add('selected');
   state.postpartumRange = range;
-  completeOnboarding();
-  renderApp();
+  saveState();
+  const responseEl = document.getElementById('stage-response-text');
+  if (responseEl) responseEl.textContent = getStageResponseText(range, state.userName);
+  showScreen('screen-stage-response');
 };
 
 window.skipStage = function() {
+  showScreen('screen-mood-onboard');
+};
+
+window.selectMoodOnboarding = function(btn, index) {
+  document.querySelectorAll('#screen-mood-onboard .mood-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.moodHistory.push({ date: new Date().toISOString(), mood: index });
+  completeOnboarding();
+  saveState();
+  renderApp();
+};
+
+window.skipMoodOnboarding = function() {
   completeOnboarding();
   renderApp();
 };
@@ -336,10 +539,24 @@ function buildLangScreen() {
 </div>`;
 }
 
+// If the last mood entry (from onboarding, or an earlier check-in today)
+// was logged today, the Home screen's own mood row should show it as
+// already selected instead of asking the same question again looking blank.
+function getTodaysMoodIndex() {
+  if (!state.moodHistory.length) return null;
+  const last = state.moodHistory[state.moodHistory.length - 1];
+  const lastDate = new Date(last.date);
+  const now = new Date();
+  const sameDay = lastDate.getFullYear() === now.getFullYear() &&
+    lastDate.getMonth() === now.getMonth() &&
+    lastDate.getDate() === now.getDate();
+  return sameDay ? last.mood : null;
+}
+
 function buildHomeScreen() {
   const L = state.L;
   const daysSince = getDaysSinceLastCheckin();
-  const recentScores = state.scoreHistory.slice(-3).reverse(); // newest first, up to 3
+  const todaysMood = getTodaysMoodIndex();
 
   return `
 <div class="screen" id="screen-home">
@@ -382,7 +599,7 @@ function buildHomeScreen() {
     <div class="section-label">${L.mood_label}</div>
     <div class="mood-row" id="mood-row">
       ${L.moods.map((m, i) => `
-        <button class="mood-btn" onclick="selectMood(this, ${i})">
+        <button class="mood-btn ${todaysMood === i ? 'selected' : ''}" onclick="selectMood(this, ${i})">
           <span class="mood-emoji">${['😔','😐','🙂','😊'][i]}</span>
           <span>${m}</span>
         </button>
@@ -430,6 +647,23 @@ function buildHomeScreen() {
       </div>
     </div>` : ''}
 
+    <div id="home-score-section">${buildHomeScoreSectionInner()}</div>
+    <div style="height:16px"></div>
+  </div>
+
+  ${buildBottomNav(0)}
+</div>`;
+}
+
+// Pulled out of buildHomeScreen() so it can be regenerated on its own —
+// the Home screen's own HTML is normally only (re)built on a full
+// renderApp(), but a fresh EPDS result needs to show up the moment you
+// navigate back to Home via showScreen(), not just on the next reload.
+// See refreshHomeScoreSection(), called right after a new score is saved.
+function buildHomeScoreSectionInner() {
+  const L = state.L;
+  const recentScores = state.scoreHistory.slice(-3).reverse(); // newest first, up to 3
+  return `
     <div class="section-label">${L.progress_label}</div>
     ${recentScores.length ? `
     <div class="score-cards-row">${recentScores.map(buildScoreCard).join('')}</div>` : `
@@ -437,12 +671,41 @@ function buildHomeScreen() {
       <div class="score-row"><span class="text-muted text-small">${L.last_score}</span><span class="text-muted" style="font-size:12px">—</span></div>
       <div class="score-bar"><div class="score-fill" style="width:0%"></div></div>
       <div class="score-ticks"><span class="text-muted" style="font-size:10px">0</span><span class="text-muted" style="font-size:10px">30</span></div>
-    </div>`}
-    <div style="height:16px"></div>
-  </div>
+    </div>`}`;
+}
 
-  ${buildBottomNav(0)}
-</div>`;
+function refreshHomeScoreSection() {
+  const el = document.getElementById('home-score-section');
+  if (el) el.innerHTML = buildHomeScoreSectionInner();
+}
+
+// Same staleness problem as the Home score section, for Profile's history
+// list — refreshed together in refreshAllScoreSections() below.
+function buildProfileScoreSectionInner() {
+  const L = state.L;
+  const recentEntries = state.scoreHistory.slice(-3).reverse(); // newest first, max 3, no padding
+  if (!recentEntries.length) return '';
+  const historyHTML = recentEntries.map(e => {
+    const cat = getScoreCategory(e.score);
+    return `
+      <div class="history-row">
+        <span class="history-dot history-dot-${cat}"></span>
+        <span class="history-date">${formatHistoryDate(e.date)}</span>
+        <span class="history-score">${e.score}/30</span>
+        <span class="history-category">${(L.result_categories || {})[cat] || cat}</span>
+      </div>`;
+  }).join('');
+  return `
+    <div class="mt-16">
+      <div class="section-label">${L.progress_label}</div>
+      ${historyHTML}
+    </div>`;
+}
+
+function refreshAllScoreSections() {
+  refreshHomeScoreSection();
+  const el = document.getElementById('profile-score-section');
+  if (el) el.innerHTML = buildProfileScoreSectionInner();
 }
 
 function buildScoreCard(entry) {
@@ -546,11 +809,60 @@ function buildResourcesScreen() {
       </div>
     </div>
   </div>
+  <div class="community-search">
+    ${iconSearch('var(--text-muted)')}
+    <input type="text" class="community-search-input" id="resources-search-input"
+      placeholder="${L.resources_search_placeholder}" oninput="filterResourceArticles(this.value)">
+  </div>
   <div class="res-tabs" id="res-tabs">${tabHTML}</div>
-  <div class="scroll-body">${contentHTML}</div>
+  <div class="scroll-body">
+    <div id="resources-normal-view">${contentHTML}</div>
+    <div id="resources-search-results" style="display:none"></div>
+  </div>
   ${buildBottomNav(2)}
 </div>`;
 }
+
+window.filterResourceArticles = function(query) {
+  const q = (query || '').trim().toLowerCase();
+  const normalView = document.getElementById('resources-normal-view');
+  const resultsView = document.getElementById('resources-search-results');
+  const tabsBar = document.getElementById('res-tabs');
+  if (!q) {
+    normalView.style.display = '';
+    resultsView.style.display = 'none';
+    tabsBar.style.display = '';
+    return;
+  }
+  tabsBar.style.display = 'none';
+  normalView.style.display = 'none';
+  resultsView.style.display = '';
+
+  const L = state.L;
+  const tabKeys = ['understanding', 'coping', 'family', 'hotlines', 'healthcare'];
+  const tabLabels = L.res_tabs;
+  const matches = [];
+  tabKeys.forEach((key, i) => {
+    (RESOURCES[key] || []).forEach(article => {
+      const haystack = (article.title + ' ' + article.content).toLowerCase();
+      if (haystack.includes(q)) matches.push({ article, tabLabel: tabLabels[i] });
+    });
+  });
+
+  if (matches.length === 0) {
+    resultsView.innerHTML = `<p class="community-no-results">${L.resources_no_results}</p>`;
+    return;
+  }
+  resultsView.innerHTML = matches.map(({ article, tabLabel }) => `
+    <div class="res-article">
+      <div class="article-header" onclick="toggleArticle(this)">
+        <div class="article-title">${article.title}</div>
+        <div class="article-tab-tag">${tabLabel}</div>
+      </div>
+      <div class="article-body open">${article.content}</div>
+    </div>
+  `).join('');
+};
 
 function buildResourceArticles(tabKey) {
   const articles = RESOURCES[tabKey] || [];
@@ -658,8 +970,13 @@ function buildCommunityScreen() {
     </div>
   </div>
   <div class="community-invite">${L.community_invite}</div>
+  <div class="community-search">
+    ${iconSearch('var(--text-muted)')}
+    <input type="text" class="community-search-input" id="community-search-input"
+      placeholder="${L.community_search_placeholder}" oninput="filterCommunityThreads(this.value)">
+  </div>
   <div class="scroll-body">
-    <div class="community-threads">
+    <div class="community-threads" id="community-threads">
       ${buildCommunityThreadCards()}
     </div>
     <div class="community-ask-box">
@@ -672,9 +989,30 @@ function buildCommunityScreen() {
 </div>`;
 }
 
-function buildCommunityThreadCards() {
+window.filterCommunityThreads = function(query) {
+  const container = document.getElementById('community-threads');
+  if (container) container.innerHTML = buildCommunityThreadCards(query);
+};
+
+function buildCommunityThreadCards(query) {
   const L = state.L;
-  return COMMUNITY_THREADS.map((t, i) => `
+  const q = (query || '').trim().toLowerCase();
+
+  const matches = COMMUNITY_THREADS
+    .map((t, i) => ({ t, i }))
+    .filter(({ t }) => {
+      if (!q) return true;
+      return t.title.toLowerCase().includes(q) ||
+        t.post.toLowerCase().includes(q) ||
+        t.author.toLowerCase().includes(q) ||
+        t.replies.some(r => r.text.toLowerCase().includes(q) || r.author.toLowerCase().includes(q));
+    });
+
+  if (q && matches.length === 0) {
+    return `<p class="community-no-results">${L.community_no_results}</p>`;
+  }
+
+  return matches.map(({ t, i }) => `
     <button class="thread-card" onclick="openThread(${i})">
       <div class="thread-card-main">
         <div class="thread-card-title">${t.title}</div>
@@ -829,26 +1167,75 @@ const DEFAULT_CONTACTS = [
 ];
 const NEW_CONTACT_AVATAR_CLASSES = ['av-green', 'av-gold', 'av-rose', 'av-blue'];
 
-// Dial codes for the app's core audience: South Africa plus its
-// neighbours and the countries covered by the app's other languages
-// (Kiswahili -> Kenya/Tanzania). Not exhaustive by design — a plain +xx
-// text entry would work for any country, this list just makes the common
-// cases a one-tap pick instead of a lookup.
+// South Africa is pinned first (the app's default), everything else is
+// alphabetised by country name — and the label starts with the name, not
+// the flag, specifically so a plain <select>'s native typeahead works:
+// browsers jump to the first option whose visible text starts with
+// whatever you type, so "Ke" now actually jumps to Kenya. That's the
+// "look up a typed country code" ability without needing a custom
+// searchable widget. Covers all of Africa plus the other countries most
+// likely to come up (the UK/US/Canada are the SA diaspora's commonest
+// destinations), rather than every country on Earth.
 const COUNTRY_CODES = [
-  { code: '+27', label: '🇿🇦 +27 South Africa' },
-  { code: '+266', label: '🇱🇸 +266 Lesotho' },
-  { code: '+268', label: '🇸🇿 +268 Eswatini' },
-  { code: '+264', label: '🇳🇦 +264 Namibia' },
-  { code: '+267', label: '🇧🇼 +267 Botswana' },
-  { code: '+263', label: '🇿🇼 +263 Zimbabwe' },
-  { code: '+258', label: '🇲🇿 +258 Mozambique' },
-  { code: '+254', label: '🇰🇪 +254 Kenya' },
-  { code: '+255', label: '🇹🇿 +255 Tanzania' },
-  { code: '+256', label: '🇺🇬 +256 Uganda' },
-  { code: '+234', label: '🇳🇬 +234 Nigeria' },
-  { code: '+233', label: '🇬🇭 +233 Ghana' },
-  { code: '+44', label: '🇬🇧 +44 United Kingdom' },
-  { code: '+1', label: '🇺🇸 +1 US / Canada' },
+  { code: '+27', label: 'South Africa 🇿🇦 +27' },
+  { code: '+213', label: 'Algeria 🇩🇿 +213' },
+  { code: '+244', label: 'Angola 🇦🇴 +244' },
+  { code: '+229', label: 'Benin 🇧🇯 +229' },
+  { code: '+267', label: 'Botswana 🇧🇼 +267' },
+  { code: '+226', label: 'Burkina Faso 🇧🇫 +226' },
+  { code: '+257', label: 'Burundi 🇧🇮 +257' },
+  { code: '+238', label: 'Cabo Verde 🇨🇻 +238' },
+  { code: '+237', label: 'Cameroon 🇨🇲 +237' },
+  { code: '+1', label: 'Canada / US 🇨🇦 +1' },
+  { code: '+236', label: 'Central African Republic 🇨🇫 +236' },
+  { code: '+235', label: 'Chad 🇹🇩 +235' },
+  { code: '+269', label: 'Comoros 🇰🇲 +269' },
+  { code: '+242', label: 'Congo-Brazzaville 🇨🇬 +242' },
+  { code: '+243', label: 'Congo (DRC) 🇨🇩 +243' },
+  { code: '+225', label: "Côte d'Ivoire 🇨🇮 +225" },
+  { code: '+253', label: 'Djibouti 🇩🇯 +253' },
+  { code: '+20', label: 'Egypt 🇪🇬 +20' },
+  { code: '+240', label: 'Equatorial Guinea 🇬🇶 +240' },
+  { code: '+291', label: 'Eritrea 🇪🇷 +291' },
+  { code: '+268', label: 'Eswatini 🇸🇿 +268' },
+  { code: '+251', label: 'Ethiopia 🇪🇹 +251' },
+  { code: '+33', label: 'France 🇫🇷 +33' },
+  { code: '+241', label: 'Gabon 🇬🇦 +241' },
+  { code: '+220', label: 'Gambia 🇬🇲 +220' },
+  { code: '+49', label: 'Germany 🇩🇪 +49' },
+  { code: '+233', label: 'Ghana 🇬🇭 +233' },
+  { code: '+224', label: 'Guinea 🇬🇳 +224' },
+  { code: '+245', label: 'Guinea-Bissau 🇬🇼 +245' },
+  { code: '+91', label: 'India 🇮🇳 +91' },
+  { code: '+254', label: 'Kenya 🇰🇪 +254' },
+  { code: '+266', label: 'Lesotho 🇱🇸 +266' },
+  { code: '+231', label: 'Liberia 🇱🇷 +231' },
+  { code: '+218', label: 'Libya 🇱🇾 +218' },
+  { code: '+261', label: 'Madagascar 🇲🇬 +261' },
+  { code: '+265', label: 'Malawi 🇲🇼 +265' },
+  { code: '+223', label: 'Mali 🇲🇱 +223' },
+  { code: '+222', label: 'Mauritania 🇲🇷 +222' },
+  { code: '+230', label: 'Mauritius 🇲🇺 +230' },
+  { code: '+212', label: 'Morocco 🇲🇦 +212' },
+  { code: '+258', label: 'Mozambique 🇲🇿 +258' },
+  { code: '+264', label: 'Namibia 🇳🇦 +264' },
+  { code: '+227', label: 'Niger 🇳🇪 +227' },
+  { code: '+234', label: 'Nigeria 🇳🇬 +234' },
+  { code: '+250', label: 'Rwanda 🇷🇼 +250' },
+  { code: '+221', label: 'Senegal 🇸🇳 +221' },
+  { code: '+248', label: 'Seychelles 🇸🇨 +248' },
+  { code: '+232', label: 'Sierra Leone 🇸🇱 +232' },
+  { code: '+252', label: 'Somalia 🇸🇴 +252' },
+  { code: '+211', label: 'South Sudan 🇸🇸 +211' },
+  { code: '+34', label: 'Spain 🇪🇸 +34' },
+  { code: '+249', label: 'Sudan 🇸🇩 +249' },
+  { code: '+255', label: 'Tanzania 🇹🇿 +255' },
+  { code: '+228', label: 'Togo 🇹🇬 +228' },
+  { code: '+216', label: 'Tunisia 🇹🇳 +216' },
+  { code: '+256', label: 'Uganda 🇺🇬 +256' },
+  { code: '+44', label: 'United Kingdom 🇬🇧 +44' },
+  { code: '+260', label: 'Zambia 🇿🇲 +260' },
+  { code: '+263', label: 'Zimbabwe 🇿🇼 +263' },
 ];
 
 function buildCountryCodeOptions(selected) {
@@ -894,12 +1281,12 @@ function buildContactCard(contact) {
   <div class="contact-info">
     <div class="contact-role">${role}</div>
     <input type="text" class="contact-name-input" placeholder="${L.hospital_name_placeholder || 'Nearest public hospital'}"
-      value="${escapeHtml(contact.name)}" oninput="updateContactName('${contact.id}', this.value)">
+      value="${escapeHtml(contact.name)}" oninput="updateContactName('${contact.id}', this)">
     <button type="button" class="locate-hospital-btn" onclick="locateNearestHospital()">${L.locate_hospital_btn || '📍 Find my nearest hospital'}</button>
     <div class="phone-row">
       <select class="country-code-select" aria-label="Country code" onchange="updateContactCountry('${contact.id}', this.value)">${buildCountryCodeOptions(contact.countryCode || '+27')}</select>
       <input type="tel" class="contact-phone-input" placeholder="${L.alert_phone_placeholder || 'Add phone number'}"
-        value="${escapeHtml(contact.phone)}" oninput="updateContactPhone('${contact.id}', this.value)">
+        value="${escapeHtml(contact.phone)}" oninput="updateContactPhone('${contact.id}', this)" inputmode="numeric">
     </div>
     <p class="hospital-note">${L.hospital_verify_note || "Please confirm this number yourself before relying on it — we can't guarantee it's current."}</p>
   </div>
@@ -913,7 +1300,7 @@ function buildContactCard(contact) {
   <div class="contact-avatar ${contact.avatarClass}">${iconUser('#fff')}</div>
   <div class="contact-info">
     <input type="text" class="contact-name-input" placeholder="${L.alert_contact_name_placeholder || 'Contact name'}"
-      value="${escapeHtml(contact.name)}" oninput="updateContactName('${contact.id}', this.value)">
+      value="${escapeHtml(contact.name)}" oninput="updateContactName('${contact.id}', this)">
     <div class="channel-toggle">
       <button type="button" class="channel-btn ${contact.channel === 'whatsapp' ? 'active' : ''}" onclick="setContactChannel('${contact.id}','whatsapp', this)">WhatsApp</button>
       <button type="button" class="channel-btn ${contact.channel === 'sms' ? 'active' : ''}" onclick="setContactChannel('${contact.id}','sms', this)">SMS</button>
@@ -921,7 +1308,7 @@ function buildContactCard(contact) {
     <div class="phone-row">
       <select class="country-code-select" aria-label="Country code" onchange="updateContactCountry('${contact.id}', this.value)">${buildCountryCodeOptions(contact.countryCode || '+27')}</select>
       <input type="tel" class="contact-phone-input" placeholder="${L.alert_phone_placeholder || 'Add phone number'}"
-        value="${escapeHtml(contact.phone)}" oninput="updateContactPhone('${contact.id}', this.value)">
+        value="${escapeHtml(contact.phone)}" oninput="updateContactPhone('${contact.id}', this)" inputmode="numeric">
     </div>
   </div>
   <div class="contact-actions">
@@ -931,10 +1318,12 @@ function buildContactCard(contact) {
 </div>`;
 }
 
-window.updateContactPhone = function(id, value) {
+window.updateContactPhone = function(id, input) {
   const contact = getContacts().find(c => c.id === id);
   if (!contact) return;
-  contact.phone = value;
+  const sanitized = input.value.replace(/\D/g, ''); // digits only — country code comes from its own dropdown
+  if (sanitized !== input.value) input.value = sanitized;
+  contact.phone = sanitized;
   saveState();
 };
 
@@ -945,10 +1334,21 @@ window.updateContactCountry = function(id, value) {
   saveState();
 };
 
-window.updateContactName = function(id, value) {
+// Lighter than sanitizeNameInput() — just strips code/markup delimiters.
+// Used for the hospital name field, which legitimately needs digits,
+// periods, apostrophes, and '&' ("St. Mary's Hospital 2"), unlike a
+// person's name.
+function sanitizeFreeTextInput(value) {
+  return value.replace(/[<>{}`]/g, '');
+}
+
+window.updateContactName = function(id, input) {
   const contact = getContacts().find(c => c.id === id);
   if (!contact) return;
-  contact.name = value;
+  const sanitize = contact.editable === 'hospital' ? sanitizeFreeTextInput : sanitizeNameInput;
+  const sanitized = sanitize(input.value);
+  if (sanitized !== input.value) input.value = sanitized;
+  contact.name = sanitized;
   saveState();
 };
 
@@ -1020,6 +1420,32 @@ window.locateNearestHospital = function() {
   );
 };
 
+window.locateUserLocation = function() {
+  const L = state.L;
+  if (!navigator.geolocation) {
+    alert(L.location_unsupported_msg || "Location isn't supported on this device — please type your location yourself.");
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      // Reuses the same curated public-hospital list as the "nearest
+      // hospital" locator — it already covers all 9 provinces with known
+      // coordinates, so there's no need for a second on-device list just
+      // to approximate a city. Entirely on-device, same as that feature:
+      // the coordinates are used for one calculation and never stored or sent.
+      const nearest = findNearestHospital(pos.coords.latitude, pos.coords.longitude);
+      if (!nearest) return;
+      state.userLocation = nearest.city;
+      saveState();
+      const input = document.getElementById('profile-location-input');
+      if (input) input.value = nearest.city;
+    },
+    () => {
+      alert(L.location_denied_msg || "Couldn't get your location. You can type it in yourself.");
+    }
+  );
+};
+
 function findNearestHospital(lat, lng) {
   let best = null;
   let bestDist = Infinity;
@@ -1059,19 +1485,6 @@ function toWhatsAppNumber(phone, countryCode) {
 
 function buildProfileScreen() {
   const L = state.L;
-  const recentEntries = state.scoreHistory.slice(-3).reverse(); // newest first, max 3, no padding
-
-  const historyHTML = recentEntries.map(e => {
-    const cat = getScoreCategory(e.score);
-    return `
-      <div class="history-row">
-        <span class="history-dot history-dot-${cat}"></span>
-        <span class="history-date">${formatHistoryDate(e.date)}</span>
-        <span class="history-score">${e.score}/30</span>
-        <span class="history-category">${(L.result_categories || {})[cat] || cat}</span>
-      </div>`;
-  }).join('');
-
   return `
 <div class="screen" id="screen-profile">
   <div class="profile-header">
@@ -1083,29 +1496,65 @@ function buildProfileScreen() {
     <div class="profile-sub">${L.member_since_label}${state.memberSince ? ' ' + formatMemberSince(state.memberSince) : ''}</div>
   </div>
   <div class="scroll-body profile-body">
-    <div class="section-label">${L.profile_title}</div>
+    <div class="section-label">${L.about_you_label}</div>
     <div class="profile-row">
       <span class="profile-label">${L.plan_label}</span>
       <span class="plan-badge">${L.plan_free}</span>
     </div>
     <div class="profile-row">
+      <span class="profile-label">${L.name_label}</span>
+      <input type="text" class="profile-edit-input" value="${escapeHtml(state.userName)}"
+        oninput="updateUserName(this)" placeholder="${L.onboard_name_placeholder}">
+    </div>
+    <div class="profile-row">
+      <span class="profile-label">${L.birthday_label}</span>
+      <span class="profile-birthday-wrap">
+        <input type="date" class="profile-edit-input" max="${new Date().toISOString().slice(0, 10)}"
+          value="${state.userBirthday || ''}" oninput="updateUserBirthday(this.value)">
+        <span class="profile-age-hint" id="profile-age-display">${formatAgeFromBirthday(state.userBirthday)}</span>
+      </span>
+    </div>
+    <div class="profile-row">
       <span class="profile-label">${L.language_label}</span>
       <a class="text-link" onclick="showScreen('screen-lang')">${L.name} → Change</a>
     </div>
-    <div class="profile-row">
-      <span class="profile-label">${L.location_label}</span>
-      <span class="profile-value">${L.location_value}</span>
+    <div class="profile-row profile-row-stacked">
+      <div class="profile-row-stacked-top">
+        <span class="profile-label">${L.location_label}</span>
+        <input type="text" class="profile-edit-input" id="profile-location-input" value="${escapeHtml(state.userLocation || '')}"
+          oninput="updateUserLocation(this.value)" placeholder="${L.location_value}">
+      </div>
+      <button type="button" class="locate-hospital-btn" onclick="locateUserLocation()">${L.locate_me_btn}</button>
     </div>
     <div class="profile-row">
       <span class="profile-label">${L.offline_label}</span>
       <span class="status-green">${L.enabled_label}</span>
     </div>
 
-    ${recentEntries.length ? `
     <div class="mt-16">
-      <div class="section-label">${L.progress_label}</div>
-      ${historyHTML}
+      <div class="section-label">${L.background_label}</div>
+      <div class="bg-swatch-row">
+        ${Object.entries(APP_BACKGROUNDS).map(([id, bg]) => `
+          <button type="button" class="bg-swatch ${state.appBackground === id ? 'selected' : ''}"
+            onclick="selectAppBackground('${id}')"
+            style="${bg.image ? `background-image:url('${bg.image}')` : 'background:var(--bg-soft)'}"
+            aria-label="${bg.label}">
+            ${!bg.image ? '✕' : ''}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    ${state.postpartumRange ? `
+    <div class="mt-16">
+      <div class="section-label">${L.about_baby_label}</div>
+      <div class="baby-stage-card">
+        <p>${escapeHtml(getStageResponseText(state.postpartumRange, state.userName))}</p>
+        <a class="text-link" onclick="showScreen('screen-stage')">${L.change_label} →</a>
+      </div>
     </div>` : ''}
+
+    <div id="profile-score-section">${buildProfileScoreSectionInner()}</div>
 
     <div class="upgrade-box">
       <h3>${L.upgrade_title}</h3>
@@ -1239,7 +1688,7 @@ function buildTermsScreen() {
         <p>The EPDS assessment is a clinically recognised screening tool, not a clinical diagnosis. Resources and coping tools are for general education and support. Always speak to a qualified healthcare provider about your specific situation before making medical decisions.</p>
 
         <h4>Who can use it</h4>
-        <p>Mama Minds is intended for adults. If a minor uses the app, a parent or guardian should be involved in decisions about her care.</p>
+        <p>Mama Minds is intended for adults aged 18 and over. We know some mothers using this app are under 18 — postpartum mental health support matters regardless of age, so the app does not block access by age. If you are under 18, please involve a parent, guardian, or another trusted adult, and speak to a healthcare provider, especially before acting on an assessment result or using the Alert feature.</p>
 
         <h4>Your data</h4>
         <p>Mama Minds has no accounts and no server — your check-ins and scores are stored only on your device. See the <a class="text-link" onclick="showScreen('screen-privacy')">Privacy Policy</a> for full details.</p>
@@ -1484,6 +1933,7 @@ function showResults() {
     state.scoreHistory = state.scoreHistory.slice(-10);
   }
   saveState();
+  refreshAllScoreSections();
 
   const headerEl   = document.getElementById('result-header');
   const scoreEl    = document.getElementById('result-score');
@@ -1685,9 +2135,18 @@ window.handleImportFile = function(input) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
+    const rawText = String(reader.result);
+    // "mama minds" (any case, hyphen or space) appearing anywhere in the
+    // file is the baseline sanity check — catches anything that obviously
+    // isn't one of our backups before we even try to parse it as JSON.
+    const looksLikeOurs = /mama[\s-]?minds/i.test(rawText);
+    if (!looksLikeOurs) {
+      showToast(state.L.import_invalid_toast, 'danger');
+      return;
+    }
     try {
-      const backup = JSON.parse(reader.result);
-      if (!backup || backup.app !== 'mama-minds-backup' || typeof backup.data !== 'object') {
+      const backup = JSON.parse(rawText);
+      if (!backup || typeof backup.data !== 'object') {
         showToast(state.L.import_invalid_toast, 'danger');
         return;
       }
@@ -1705,6 +2164,54 @@ window.handleImportFile = function(input) {
 };
 
 // ── Profile ────────────────────────────────
+window.updateUserName = function(input) {
+  const sanitized = sanitizeNameInput(input.value);
+  if (sanitized !== input.value) input.value = sanitized;
+  state.userName = sanitized.trim() || 'Mama';
+  saveState();
+  const nameEl = document.getElementById('profile-name');
+  if (nameEl) nameEl.textContent = state.userName;
+  const avatarEl = document.getElementById('profile-avatar');
+  if (avatarEl) avatarEl.innerHTML = buildAvatar(state.userName);
+  const heroNameEl = document.getElementById('hero-name');
+  if (heroNameEl) heroNameEl.textContent = state.userName;
+};
+
+window.updateUserBirthday = function(value) {
+  state.userBirthday = value || null;
+  saveState();
+  const ageEl = document.getElementById('profile-age-display');
+  if (ageEl) ageEl.textContent = formatAgeFromBirthday(state.userBirthday);
+};
+
+function formatAgeFromBirthday(birthday) {
+  if (!birthday) return '';
+  const dob = new Date(birthday);
+  if (Number.isNaN(dob.getTime())) return '';
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const hasHadBirthdayThisYear =
+    today.getMonth() > dob.getMonth() ||
+    (today.getMonth() === dob.getMonth() && today.getDate() >= dob.getDate());
+  if (!hasHadBirthdayThisYear) age--;
+  return age >= 0 ? String(age) : '';
+}
+
+window.updateUserLocation = function(value) {
+  state.userLocation = value;
+  saveState();
+};
+
+window.selectAppBackground = function(id) {
+  if (!APP_BACKGROUNDS[id]) return;
+  state.appBackground = id;
+  saveState();
+  applyAppBackground();
+  document.querySelectorAll('.bg-swatch').forEach(el => el.classList.remove('selected'));
+  const btn = document.querySelector(`.bg-swatch[aria-label="${APP_BACKGROUNDS[id].label}"]`);
+  if (btn) btn.classList.add('selected');
+};
+
 window.handleUpgrade = function() {
   showToast(state.L.upgrade_toast, 'default');
 };
@@ -1763,6 +2270,9 @@ function iconBack(color) {
 }
 function iconBell(color) {
   return `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`;
+}
+function iconSearch(color) {
+  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`;
 }
 function iconChevronRight(color) {
   return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>`;
